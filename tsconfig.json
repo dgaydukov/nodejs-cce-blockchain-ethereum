@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": [
+      "es2017","es2015","dom","es6"
+    ],
+    "types": [
+      "node"
+    ],
+    "experimentalDecorators": true,
+    "module": "commonjs",
+    "outDir": "dist",
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@root/*": ["src/*"],
+      "@blockchain/*": ["src/blockchain/*"],
+      "@db/*": ["src/db/*"],
+      "@deamons/*": ["src/deamons/*"],
+      "@kafka/*": ["src/kafka/*"],
+      "@logic/*": ["src/logic/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

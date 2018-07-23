@@ -1,0 +1,19 @@
+{
+  "name": "nodejs-cce-blockchain-ethereum",
+  "script": "dist/index.js",
+  "autorestart": true,
+  "watch": [ "dist" ],
+  "ignore_watch": [ "src", "node_modules", "dist/deamons" ],
+  "env": {
+    "ENV": "dev",
+    "PORT": 3331,
+    "DEBUG": "blockchain, db, kafka, logic",
+    "DEBUG_COLORS": true,
+    "DEBUG_DEPTH": 6,
+    "MONGODB_CONNECTION": "mongodb://127.0.0.1:27017/ethereumproxy",
+    "KAFKA_CONNECTION": "127.0.0.1:9092",
+    "KAFKA_TOPIC_LISTEN": "ethereumProxyRequest",
+    "KAFKA_TOPIC_SEND": "ethereumProxyResponse",
+    "ETHEREUM_NODE_BASE_URL": "http://127.0.0.0.1:8545"
+  }
+}
