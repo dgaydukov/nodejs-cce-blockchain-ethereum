@@ -17,7 +17,7 @@ export class AddressInfo{
                     balance: addressItem.balance,
                     tx: []
                 }
-                Transaction.find({addressTo: {$regex: this.address, $options: 'i'}}, (err, txList)=>{
+                Transaction.find({$or: [{addressFrom: {$regex: this.address, $options: 'i'}}, {addressTo: {$regex: this.address, $options: 'i'}}]}, (err, txList)=>{
                     if(txList){
                         txList.map(tx=>{
                             data.tx.push({
@@ -27,6 +27,7 @@ export class AddressInfo{
                                 addressFrom: tx.addressFrom,
                                 addressTo: tx.addressTo,
                                 amount: tx.amount,
+                                type: tx.type,
                             })
                         })
                         cb(null, data)

@@ -98,7 +98,6 @@ const check = (finishCb) =>{
                     finish(lastBlockNumber, lastBlock)
                 }
                 block.transactions.map((tx, i)=>{
-                    console.log(tx.to, tx.value)
                     if(len == i + 1){
                         finish(lastBlockNumber, lastBlock)
                     }

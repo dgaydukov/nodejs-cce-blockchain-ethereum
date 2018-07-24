@@ -18,6 +18,7 @@ export class TransactionInfo{
                     addressFrom: tx.addressFrom,
                     addressTo: tx.addressTo,
                     amount: tx.amount,
+                    type: tx.type,
                 }
                 cb(null, data)
             }
