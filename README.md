@@ -1,17 +1,20 @@
 # Node.js CCE (Crypto Currency Exchange) BlockChain Ethereum
 
 ## Content
-* [Project Description](#Project-Description)
-* [Project Structure](#Project-Structure)
-* [Built With](#Built-With)
-* [Installation](#Installation)
-* [System Testing](#System-Testing)
-* [Module loading](#Module-loading)
+* [Project Description](#project-description)
+* [Project Structure](#project-structure)
+* [Built With](#built-with)
+* [Installation](#installation)
+* [Auto Testing](#auto-testing)
+* [Kafka](#kafka)
+* [Geth Testnet](#geth-testnet)
+* [Module loading](#module-loading)
+* [Authors](#authors)
 
 
 ### Project Description
 Ethereum Proxy is a project to connect Ethereum node (geth) and CCE. Communication works through Kafka. Communication with bitcoin node works
-throught json RPC.
+through json RPC.
 
 
 ### Project Structure
@@ -72,10 +75,8 @@ npm run mptcheck
 
 
 
-### System Testing
 
-
-##### Auto Testing
+### Auto Testing
 
 You can run auto tests with `npm test`
 For testing purpose we use the following arhitecture
@@ -85,8 +86,28 @@ testing framework + assertion module + test doubles + code coverage
 * [Sinon](http://sinonjs.org) - test doubles
 * [Mocha](https://github.com/gotwarlost/istanbul) - code coverage
 
+### Kafka
 
-#### Geth testnet
+
+```shell
+# 1. Create kafka topics
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic ethereumProxyRequest
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic ethereumProxyResponse
+
+# 2. Listen kafka responses from Ethereum proxy
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic ethereumProxyResponse --from-beginning
+
+# 3. Generate new ethereum address
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic ethereumProxyRequest
+{"data":{},"metadata":{"guid":"123","methodName":"getAddress","timestamp":"","context":""}}
+
+# 4. Send Ethereum transaction
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic ethereumProxyRequest
+{"data":{"to":"2NFpchMYyRTrY6eCr9YuiYQ62g6CdUjWfbk", "amount": "0.01"},"metadata":{"guid":"123","methodName":"sendTransaction","timestamp":"","context":""}}
+```
+
+
+### Geth Testnet
 
 To check out the system you can get money from free [faucet](http://faucet.ropsten.be:3001)
 To check you balance you can use [this](https://ropsten.etherscan.io/tx/0xc068a513bd346afd3e50b99ab5d4cdd5c9ecf069b172506b260457984bceab4a) website
@@ -128,24 +149,6 @@ txpool.content
 ```
 
 
-```shell
-# 1. Create kafka topics
-bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic ethereumProxyRequest
-bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic ethereumProxyResponse
-
-# 2. Listen kafka responses from Ethereum proxy
-bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic ethereumProxyResponse --from-beginning
-
-# 3. Generate new ethereum address
-bin/kafka-console-producer.sh --broker-list localhost:9092 --topic ethereumProxyRequest
-{"data":{},"metadata":{"guid":"123","methodName":"getAddress","timestamp":"","context":""}}
-
-# 4. Send Ethereum transaction
-bin/kafka-console-producer.sh --broker-list localhost:9092 --topic ethereumProxyRequest
-{"data":{"to":"2NFpchMYyRTrY6eCr9YuiYQ62g6CdUjWfbk", "amount": "0.01"},"metadata":{"guid":"123","methodName":"sendTransaction","timestamp":"","context":""}}
-```
-
-
 
 
 
@@ -174,6 +177,10 @@ typescript functions. For this purpose we write in typescript config ts.config.j
 
 
 
+
+## Authors
+
+* **Gaydukov Dmitiry** - *Take a look* - [How to become a Senior Javascript Developer](https://github.com/dgaydukov/how-to-become-a-senior-js-developer)
 
 
 
