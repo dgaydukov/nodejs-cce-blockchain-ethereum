@@ -93,11 +93,12 @@ const check = (finishCb) => {
                      }
                      if(tx.to && addressList[tx.to.toLowerCase()]){
                          debug(`address found: ${tx.to}`)
+                         const amount = parseInt(tx.value, 16)*10**-18
                          const newTx = new Transaction({
                              txId: tx.hash,
                              addressFrom: tx.from,
                              addressTo: tx.to,
-                             amount: tx.value,
+                             amount: amount,
                          })
                          newTx.save((err, dta)=>{
 
@@ -106,7 +107,7 @@ const check = (finishCb) => {
                                  txId: tx.hash,
                                  addressFrom: tx.from,
                                  addressTo: tx.to,
-                                 amount: tx.value,
+                                 amount: amount,
                              })
                          )
                      }

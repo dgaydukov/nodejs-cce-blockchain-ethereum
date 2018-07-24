@@ -70,13 +70,13 @@ const check = (finishCb) => {
                             if(i == len - 1){
                                 finish()
                             }
-                            if(err || null == tx){
+                            if(err || null == tx || !tx.blockNumber){
                                 return
                             }
                             const blockNumber = tx.blockNumber
                             const confirmationNumber = currentBlockNumber - blockNumber
                             //update blockNumber if null
-                            if(!txItem.blockNumber && blockNumber){
+                            if(!txItem.blockNumber){
                                 txItem.blockNumber = blockNumber
                                 txItem.save((err, data)=>{
                                     if(err){
@@ -85,6 +85,7 @@ const check = (finishCb) => {
                                     kc.send(buildMessage(METHOD_TX_WENT_INTO_BLOCK, {
                                             txId: data.txId,
                                             blockNumber: data.blockNumber,
+                                            confirmationNumber: data.confirmationNumber,
                                         })
                                     );
                                 })
@@ -98,6 +99,7 @@ const check = (finishCb) => {
                                     }
                                     kc.send(buildMessage(METHOD_NEW_CONFIRMATION, {
                                             txId: data.txId,
+                                            blockNumber: data.blockNumber,
                                             confirmationNumber: data.confirmationNumber,
                                         })
                                     );

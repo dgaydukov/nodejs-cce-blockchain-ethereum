@@ -14,8 +14,8 @@
     "KAFKA_CONNECTION": "127.0.0.1:9092",
     "KAFKA_TOPIC_LISTEN": "ethereumProxyRequest",
     "KAFKA_TOPIC_SEND": "ethereumProxyResponse",
-    "ETHEREUM_NODE_BASE_URL": "http://127.0.0.0.1:8545",
-    "ETHEREUM_SYNC_START_BLOCK": 3663301,
+    "ETHEREUM_NODE_BASE_URL": "http://127.0.0.1:8545",
+    "ETHEREUM_SYNC_START_BLOCK": 3699549,
     "RECEIVING_APP_ID": "7132d44d-e8a6-443e-8ddd-a8285fd01112"
   }
 }

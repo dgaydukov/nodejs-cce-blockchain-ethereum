@@ -130,7 +130,9 @@ exit
 ls -lh ~/.ethereum/keystore/
 
 # connect (attach) to ethereum node
-geth attach /srv/devnode/ethereum/geth.ipc
+geth attach ~/.ethereum/testnet/geth.ipc
+# or attach to testnet
+geth --testnet attach
 
 # create new account with password: admin
 personal.newAccount("admin")
@@ -139,10 +141,13 @@ personal.newAccount("admin")
 eth.getBalance("0x94f4fd6219851cce017874009b9f80ad8df4a7fd")
 
 # unlock account for 30 seconds to make transaction
-personal.unlockAccount("0x94f4fd6219851cce017874009b9f80ad8df4a7fd", "admin", 30)
+personal.unlockAccount("0x3740642a96f3833bf15983950dc0d2f9a261137c", "admin", 30)
 
 # send transaction (note: amount should be in wei, 1 ether = 10**18 wei)
-eth.sendTransaction({from:"0x94f4fd6219851cce017874009b9f80ad8df4a7fd", to:"0x40Db6aC6887C3b95008d826BC046ED15d09D8299", value: 1000000000000000})
+eth.sendTransaction({from:"0x3740642a96f3833bf15983950dc0d2f9a261137c", to:"0x735A977081464171e10CAA48b43039c56c86efAA", value: 1000000000000000})
+
+# get info about transaction
+eth.getTransaction("0x410d4064fe25aebd12547c52877e5031af37b130ba1944917169e81c3473d722")
 
 # get txpool transaction (need to pass txpool when run ethereum node)
 txpool.content
