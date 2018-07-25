@@ -1,7 +1,9 @@
 
-const debug = require("debug")("blockchain")
+import {Promise} from "bluebird"
 import {default as config} from "@root/config.json"
+const debug = require("debug")("blockchain")
 const Web3 = require('web3')
+
 const web3 = new Web3(new Web3.providers.HttpProvider(config.ETHEREUM_NODE_BASE_URL))
 const eth = web3.eth
 
@@ -23,16 +25,8 @@ eth.extend({
 
 
 export class EthereumNode{
-    getNewAddress(password, cb){
-        eth.personal.newAccount(password, (error, address)=>{
-            if(error){
-                debug(`error on address creating: ${error.message}`)
-            }
-            else{
-                debug(`new address ${address} created`)
-            }
-            cb(error, address)
-        })
+    getNewAddress(password){
+        return eth.personal.newAccount(password)
     }
 
     getBalance(address, cb){
@@ -96,21 +90,26 @@ export class EthereumNode{
         })
     }
 
-    sendTransaction(from, to, amount, unlockPassword, cb){
-        eth.personal.unlockAccount(from, unlockPassword, 30)
-            .then((response) => {
-                eth.sendTransaction({
-                    from: from,
-                    to: to,
-                    value: web3.utils.toWei(amount.toString())
-                }, (err, result)=>{
-                    cb(err, result)
-                });
-            }).catch((err) => {
-                cb(err)
-            });
-
-
+    sendTransaction(from, to, amount, unlockPassword){
+        return new Promise((resolve, reject)=>{
+            eth.personal.unlockAccount(from, unlockPassword, 30)
+                .then((isOpen) => {
+                    if(!isOpen){
+                        throw new Error(`Can't open account, maybe wrong password`)
+                    }
+                    return eth.sendTransaction({
+                        from: from,
+                        to: to,
+                        value: web3.utils.toWei(amount.toString())
+                    })
+                })
+                .then(receipt=>{
+                    resolve(receipt)
+                })
+                .catch(ex=>{
+                    reject(ex)
+                })
+        })
     }
 }
 

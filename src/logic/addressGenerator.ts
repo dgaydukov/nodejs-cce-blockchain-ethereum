@@ -3,19 +3,23 @@ import {Address} from "@db/models/address"
 import {EthereumNode} from "@blockchain/ethereumNode"
 
 export class AddressGenerator {
-    getAddress(cb){
+    getAddress(){
         const node = new EthereumNode()
         const password = Math.random().toString(36).slice(-8)
-        node.getNewAddress(password,(error, newAddress)=>{
-            if(error){
-                return cb(error)
-            }
-            const address = new Address()
-            address.address = newAddress
-            address.password = password
-            address.save((err, data) => {
-                cb(err, data)
-            })
+        return new Promise((resolve, reject) => {
+            node.getNewAddress(password)
+                .then(newAddress=>{
+                    const address = new Address()
+                    address.address = newAddress
+                    address.password = password
+                    return address.save()
+                })
+                .then(addressModel=>{
+                    resolve(addressModel)
+                })
+                .catch(ex=>{
+                    reject(ex)
+                })
         })
     }
     updateKmId(id, kmId){
