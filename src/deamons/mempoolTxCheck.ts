@@ -5,6 +5,7 @@
  */
 require('module-alias/register')
 
+import {Promise} from "bluebird"
 const debug = require("debug")("mptheck")
 import {KafkaConnector} from "@kafka/kafkaConnector"
 import {Address} from "@db/models/address"
@@ -14,105 +15,119 @@ import {EthereumNode} from "@blockchain/ethereumNode"
 import {buildMessage} from "@deamons/helpers"
 
 const RUN_TIME = 10
-const WAIT_TIME = 10
 const METHOD_NEW_MEMPOOL_TX = "newMempoolTx"
 
-const node = new EthereumNode()
-const kc = new KafkaConnector()
-let allowRun = true
 
 
-setInterval(()=>{
-    if(allowRun){
-        debug("start")
-        allowRun = false
-        const finishCb = () => {
-            allowRun = true
-            debug("-------------finish-------------")
+const run = () => {
+    const node = new EthereumNode()
+    const kc = new KafkaConnector()
+    let allowRun = true
+
+    setInterval(()=>{
+        if(allowRun){
+            debug("start")
+            allowRun = false
+            check(node, kc)
+                .then(()=>{
+                    debug(`-------------finish-------------`)
+                })
+                .catch((ex)=>{
+                    //debug(ex)
+                    debug(`Error: ${ex}`)
+                })
+                .finally(()=>{
+                    allowRun = true
+                })
         }
-        check(finishCb)
-    }
-}, RUN_TIME * 1000)
+    }, RUN_TIME * 1000)
+}
 
-const check = (finishCb) => {
+const check = (node, kc) => {
     /**
      *  For test purpose you can clear latestblock & transaction
      *  LatestBlock.collection.drop()
      */
 
-     Address.find({}, (err, data)=>{
-         const addressList = {}
-         debug(`number of address to watch: ${data.length}`)
-         if(data){
-             data.map(addressItem => {
-                 const address = addressItem.address
-                 if(address){
-                     addressList[address.toLowerCase()] = addressItem
-                 }
-             })
-         }
-         MempoolTx.find({}, (err, data)=>{
-             if(err){
-                 debug(`mempool db table error: ${err}`)
-                 return finishCb()
-             }
-             const dbTxList = {}
-             debug(`db tx number: ${data.length}`)
-             if(data){
-                 data.map(txItem=>{
-                     dbTxList[txItem.txId] = 1
-                 })
-             }
-             node.getMempoolTxList((err, pool)=>{
-                 if(err || null == pool){
-                     debug(`blockchain mempool error: ${err}`)
-                     return finishCb()
-                 }
-                 const txWatchList = []
-                 Object.keys(pool.pending).map(addressFrom=>{
-                     Object.keys(pool.pending[addressFrom]).map(key=>{
-                         const tx = pool.pending[addressFrom][key]
-                         if(dbTxList[tx.hash]){
-                             return
-                         }
-                         const newMpTx = new MempoolTx({
-                             txId: tx.hash
-                         })
-                         newMpTx.save((err, dta)=>{
-
-                         })
-                         txWatchList.push(tx)
-                     })
-                 })
-
-                 const len = txWatchList.length
-                 debug(`tx number to check: ${len}`)
-                 txWatchList.map((tx, i)=>{
-                     if(i == len - 1){
-                         finishCb()
-                     }
-                     if(tx.to && addressList[tx.to.toLowerCase()]){
-                         debug(`address found: ${tx.to}`)
-                         const amount = parseInt(tx.value, 16)*10**-18
-                         const newTx = new Transaction({
-                             txId: tx.hash,
-                             addressFrom: tx.from,
-                             addressTo: tx.to,
-                             amount: amount,
-                         })
-                         newTx.save((err, dta)=>{
-
-                         })
-                         kc.send(buildMessage(METHOD_NEW_MEMPOOL_TX, {
-                                 txId: tx.hash,
-                                 addressFrom: tx.from,
-                                 addressTo: tx.to,
-                                 amount: amount,
-                             })
-                         )
-                     }
-                 })
-             })
-         })
+    return new Promise((resolve, reject)=>{
+        const addressData = Address.find({})
+        const mempoolTxData = MempoolTx.find({})
+        Promise.all([addressData, mempoolTxData])
+            .then(data=>{
+                const [addressData, mempoolTxData] = data
+                debug(`number of address to watch: ${addressData.length}`)
+                debug(`number of mempool tx in db: ${mempoolTxData.length}`)
+                const addressList = {};
+                const mempoolTxList = {};
+                addressData.map(item=>{
+                    const address = item.address
+                    if(address){
+                        addressList[address.toLowerCase()] = item
+                    }
+                })
+                mempoolTxData.map(txItem=>{
+                    mempoolTxList[txItem.txId] = 1
+                })
+                return Promise.all([addressList, mempoolTxList, node.getMempoolTxContent()])
+            })
+            .then(data=> {
+                const [addressList, mempoolTxList, pool] = data
+                const txWatchList = []
+                Object.keys(pool.pending).map(addressFrom => {
+                    Object.keys(pool.pending[addressFrom]).map(key => {
+                        const tx = pool.pending[addressFrom][key]
+                        if (mempoolTxList[tx.hash]) {
+                            return
+                        }
+                        const newMpTx = new MempoolTx({
+                            txId: tx.hash
+                        })
+                        newMpTx.save()
+                        txWatchList.push(tx)
+                    })
+                })
+                return [addressList, txWatchList]
+            })
+            .then(data => {
+                const [addressList, txWatchList] = data
+                const len = txWatchList.length
+                debug(`number of mempool tx to check: ${len}`)
+                let inputTxNumber = 0
+                txWatchList.map(tx=>{
+                    if(tx.to && addressList[tx.to.toLowerCase()]){
+                        inputTxNumber++
+                        debug(`address found: ${tx.to}`)
+                        const amount = parseInt(tx.value, 16)*10**-18
+                        const newTx = new Transaction({
+                            txId: tx.hash,
+                            addressFrom: tx.from,
+                            addressTo: tx.to,
+                            amount: amount,
+                        })
+                        newTx.save()
+                            .then(txItem=>{
+                                kc.send(
+                                    buildMessage(METHOD_NEW_MEMPOOL_TX, {
+                                        txId: txItem.txId,
+                                        addressFrom: txItem.addressFrom,
+                                        addressTo: txItem.addressTo,
+                                        amount: txItem.amount,
+                                    })
+                                )
+                            })
+                    }
+                })
+                return inputTxNumber
+            })
+            .then(inputTxNumber=>{
+                debug(`number of incoming tx in mempool: ${inputTxNumber}`)
+                resolve()
+            })
+            .catch(ex=>{
+                reject(ex)
+            })
     })
 }
+
+
+run()

@@ -29,26 +29,17 @@ export class EthereumNode{
         return eth.personal.newAccount(password)
     }
 
-    getBalance(address, cb){
-        eth.getBalance(address, (error, balance)=>{
-            debug(`balance of ${address} is ${balance}`)
-            cb(error, balance)
-        });
-    }
-
-    getAddressList(cb){
-        eth.getAccounts((err, list)=>{
-            cb(err, list)
-        })
-    }
-
     getTransaction(txId, cb){
         eth.getTransaction(txId, (err, tx)=>{
             cb(err, tx)
         })
     }
 
-    getCurrentBlockNumber(cb){
+    getMempoolTxContent(){
+        return web3.eth.txpool.content()
+    }
+
+    getBlockNumber(cb){
         eth.getBlockNumber( (err, tx)=>{
             cb(err, tx)
         })
@@ -57,36 +48,6 @@ export class EthereumNode{
     getBlockByNumber(number, cb){
         eth.getBlock(number, true,  (err, block)=>{
             cb(err, block)
-        })
-    }
-
-    getMempoolTxList(cb){
-        web3.eth.txpool.content()
-            .then(pool=>{
-                cb(null, pool)
-            })
-            .catch(err=>{
-                cb(err)
-            })
-    }
-
-    getTotalBalance(cb){
-        let total = 0;
-        eth.getAccounts((err, list)=>{
-            const len = list.length
-            list.map((address, i)=>{
-                eth.getBalance(address, (err, balance)=>{
-                    if(!err){
-                        debug(`balance of ${address} is ${balance}`)
-                        total += parseFloat(balance)
-                    }
-
-                    if(i == len - 1){
-                        debug(`total balance ${total}`)
-                        cb(total)
-                    }
-                })
-            })
         })
     }
 
@@ -109,6 +70,33 @@ export class EthereumNode{
                 .catch(ex=>{
                     reject(ex)
                 })
+        })
+    }
+
+    getBalance(address, cb){
+        eth.getBalance(address, (error, balance)=>{
+            debug(`balance of ${address} is ${balance}`)
+            cb(error, balance)
+        });
+    }
+
+    getTotalBalance(cb){
+        let total = 0;
+        eth.getAccounts((err, list)=>{
+            const len = list.length
+            list.map((address, i)=>{
+                eth.getBalance(address, (err, balance)=>{
+                    if(!err){
+                        debug(`balance of ${address} is ${balance}`)
+                        total += parseFloat(balance)
+                    }
+
+                    if(i == len - 1){
+                        debug(`total balance ${total}`)
+                        cb(total)
+                    }
+                })
+            })
         })
     }
 }
