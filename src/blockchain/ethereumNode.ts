@@ -29,26 +29,20 @@ export class EthereumNode{
         return eth.personal.newAccount(password)
     }
 
-    getTransaction(txId, cb){
-        eth.getTransaction(txId, (err, tx)=>{
-            cb(err, tx)
-        })
+    getTransaction(txId){
+        return eth.getTransaction(txId)
     }
 
     getMempoolTxContent(){
         return web3.eth.txpool.content()
     }
 
-    getBlockNumber(cb){
-        eth.getBlockNumber( (err, tx)=>{
-            cb(err, tx)
-        })
+    getBlockNumber(){
+        return eth.getBlockNumber()
     }
 
-    getBlockByNumber(number, cb){
-        eth.getBlock(number, true,  (err, block)=>{
-            cb(err, block)
-        })
+    getBlockByNumber(number){
+        return eth.getBlock(number, true)
     }
 
     sendTransaction(from, to, amount, unlockPassword){
@@ -73,31 +67,33 @@ export class EthereumNode{
         })
     }
 
-    getBalance(address, cb){
-        eth.getBalance(address, (error, balance)=>{
-            debug(`balance of ${address} is ${balance}`)
-            cb(error, balance)
-        });
+    getBalance(address){
+        return eth.getBalance(address);
     }
 
-    getTotalBalance(cb){
-        let total = 0;
-        eth.getAccounts((err, list)=>{
-            const len = list.length
-            list.map((address, i)=>{
-                eth.getBalance(address, (err, balance)=>{
-                    if(!err){
-                        debug(`balance of ${address} is ${balance}`)
-                        total += parseFloat(balance)
-                    }
-
-                    if(i == len - 1){
-                        debug(`total balance ${total}`)
-                        cb(total)
-                    }
+    getTotalBalance(){
+        return new Promise((resolve, reject)=>{
+            let total = 0;
+            eth.getAccounts()
+                .then(data=>{
+                    debug(`number of accounts is: ${data.length}`)
+                    const promiseList = []
+                    data.map(address=>{
+                        promiseList.push(eth.getBalance(address))
+                    })
+                    return Promise.all(promiseList)
                 })
+                .then(data=>{
+                    let totalBalance: number = 0
+                    data.map(balance=>{
+                        totalBalance += Number(web3.utils.fromWei(balance, "ether"))
+                    })
+                    debug(`total balance is: ${totalBalance}`)
+                    return totalBalance
+                })
+                .then(resolve)
+                .catch(reject)
             })
-        })
     }
 }
 
