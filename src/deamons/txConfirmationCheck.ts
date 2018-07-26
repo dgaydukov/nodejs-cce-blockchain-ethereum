@@ -52,68 +52,68 @@ const check = (finishCb) => {
             finishCb()
         }, WAIT_TIME * 1000)
     }
-    node.getCurrentBlockNumber((err, currentBlockNumber)=>{
-        if(err || null == currentBlockNumber){
-            debug(`blockchain getCurrentBlockNumber error: ${err}`)
-            return finish()
-        }
-        Transaction.find({confirmationNumber: {$lt: MAX_CONFIRMATION_NUMBER}}, (err, txList)=>{
-            if(txList){
-                const len = txList.length
-                debug(`number of tx to watch: ${len}`)
-                if(len == 0){
-                    finish()
-                }
-                txList.map((txItem, i)=>{
-                    setTimeout(()=>{
-                        node.getTransaction(txItem.txId, (err, tx)=>{
-                            if(i == len - 1){
-                                finish()
-                            }
-                            if(err || null == tx || !tx.blockNumber){
-                                return
-                            }
-                            const blockNumber = tx.blockNumber
-                            const confirmationNumber = currentBlockNumber - blockNumber
-                            //update blockNumber if null
-                            if(!txItem.blockNumber){
-                                txItem.blockNumber = blockNumber
-                                txItem.save((err, data)=>{
-                                    if(err){
-                                        return debug(err.toString())
-                                    }
-                                    kc.send(buildMessage(METHOD_TX_WENT_INTO_BLOCK, {
-                                            txId: data.txId,
-                                            blockNumber: data.blockNumber,
-                                            confirmationNumber: data.confirmationNumber,
-                                        })
-                                    );
-                                })
-                            }
-                            else if(confirmationNumber > 0 && confirmationNumber != txItem.confirmationNumber){
-                                debug(`txId: ${txItem.txId}, confirmationNumber: ${confirmationNumber}`)
-                                txItem.confirmationNumber = confirmationNumber
-                                txItem.save((err, data)=>{
-                                    if(err){
-                                        return debug(err.toString())
-                                    }
-                                    kc.send(buildMessage(METHOD_NEW_CONFIRMATION, {
-                                            txId: data.txId,
-                                            blockNumber: data.blockNumber,
-                                            confirmationNumber: data.confirmationNumber,
-                                        })
-                                    );
-                                })
-                            }
-
-                        })
-                    }, i * 100)
-                })
-            }
-            else{
-                finish()
-            }
-        })
-    })
+    // node.getCurrentBlockNumber((err, currentBlockNumber)=>{
+    //     if(err || null == currentBlockNumber){
+    //         debug(`blockchain getCurrentBlockNumber error: ${err}`)
+    //         return finish()
+    //     }
+    //     Transaction.find({confirmationNumber: {$lt: MAX_CONFIRMATION_NUMBER}}, (err, txList)=>{
+    //         if(txList){
+    //             const len = txList.length
+    //             debug(`number of tx to watch: ${len}`)
+    //             if(len == 0){
+    //                 finish()
+    //             }
+    //             txList.map((txItem, i)=>{
+    //                 setTimeout(()=>{
+    //                     node.getTransaction(txItem.txId, (err, tx)=>{
+    //                         if(i == len - 1){
+    //                             finish()
+    //                         }
+    //                         if(err || null == tx || !tx.blockNumber){
+    //                             return
+    //                         }
+    //                         const blockNumber = tx.blockNumber
+    //                         const confirmationNumber = currentBlockNumber - blockNumber
+    //                         //update blockNumber if null
+    //                         if(!txItem.blockNumber){
+    //                             txItem.blockNumber = blockNumber
+    //                             txItem.save((err, data)=>{
+    //                                 if(err){
+    //                                     return debug(err.toString())
+    //                                 }
+    //                                 kc.send(buildMessage(METHOD_TX_WENT_INTO_BLOCK, {
+    //                                         txId: data.txId,
+    //                                         blockNumber: data.blockNumber,
+    //                                         confirmationNumber: data.confirmationNumber,
+    //                                     })
+    //                                 );
+    //                             })
+    //                         }
+    //                         else if(confirmationNumber > 0 && confirmationNumber != txItem.confirmationNumber){
+    //                             debug(`txId: ${txItem.txId}, confirmationNumber: ${confirmationNumber}`)
+    //                             txItem.confirmationNumber = confirmationNumber
+    //                             txItem.save((err, data)=>{
+    //                                 if(err){
+    //                                     return debug(err.toString())
+    //                                 }
+    //                                 kc.send(buildMessage(METHOD_NEW_CONFIRMATION, {
+    //                                         txId: data.txId,
+    //                                         blockNumber: data.blockNumber,
+    //                                         confirmationNumber: data.confirmationNumber,
+    //                                     })
+    //                                 );
+    //                             })
+    //                         }
+    //
+    //                     })
+    //                 }, i * 100)
+    //             })
+    //         }
+    //         else{
+    //             finish()
+    //         }
+    //     })
+    // })
 
 }

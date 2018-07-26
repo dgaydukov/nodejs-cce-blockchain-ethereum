@@ -1,5 +1,7 @@
 /**
- * Application enter point
+ * Since address creation is a hard task that take some time (from 0.5 to 1 second), if we have to create 100 addresses,
+ * we need to ensure that they are creating one after another, so our Ethereum node will not fail
+ * Here I have a nice solution how to solve this with Promise.mapSeries function
  */
 
 
@@ -24,11 +26,13 @@ Promise.mapSeries(promiseList, func => {
     })
 
 
-function seqPromise(promiseList) {
+
+
+const seqPromise = (promiseList)=>{
     const results = [];
-    return promiseList.reduce(function(p, item) {
-        return p.then(function() {
-            return item().then(function(data) {
+    return promiseList.reduce((p, item)=>{
+        return p.then(()=>{
+            return item().then(data=>{
                 results.push(data);
                 return results;
             });

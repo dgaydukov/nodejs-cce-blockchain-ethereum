@@ -85,83 +85,83 @@ const check = (finishCb) =>{
                     id: 1,
                 }
             };
-            node.getBlockByNumber(lastBlockNumber, (err, block)=>{
-                debug(`block #${lastBlockNumber}`)
-                if(err || null == block){
-                    debug(`blockchain getBlockByNumber error: ${err}`)
-                    return finish()
-                }
-
-                const len = block.transactions.length
-                debug(`number of tx: ${len}`)
-                if(len == 0){
-                    finish(lastBlockNumber, lastBlock)
-                }
-                block.transactions.map((tx, i)=>{
-                    if(len == i + 1){
-                        finish(lastBlockNumber, lastBlock)
-                    }
-                    if(tx.to){
-                        const addressToItem = addressList[tx.to.toLowerCase()]
-                        if(addressToItem){
-                            debug(`address found: ${addressToItem.address}`)
-                            const amount = tx.value * 10**-18
-                            Transaction.findOne({txId: tx.hash}, (err, dbTx)=>{
-                                if(!dbTx) {
-                                    dbTx = new Transaction()
-                                    dbTx.txId = tx.hash
-                                }
-                                dbTx.addressFrom = tx.from
-                                dbTx.addressTo = tx.to
-                                dbTx.amount = amount
-                                dbTx.blockNumber = lastBlockNumber
-                                dbTx.type = TYPE.INPUT
-                                dbTx.save((err, data)=>{
-                                    debug(`tx saved ${data.txId}, address: ${data.addressTo}`)
-                                    Transaction.find({addressTo: tx.to}, (err, data)=>{
-                                        if(data){
-                                            let balance: number = 0
-                                            data.map(txItem=>{
-                                                if(txItem.type == TYPE.INPUT){
-                                                    balance += Number(txItem.amount)
-                                                }
-                                                else{
-                                                    balance -= Number(txItem.amount)
-                                                }
-                                            })
-                                            addressToItem.balance = balance
-                                            addressToItem.save((err, savedItem)=>{
-                                                kc.send(buildMessage(METHOD_NEW_BALANCE, {
-                                                        address: tx.to,
-                                                        txId: tx.hash,
-                                                        amount: amount,
-                                                        totalBalance: balance,
-                                                    })
-                                                )
-                                            });
-                                        }
-                                    })
-                                    kc.send(buildMessage(METHOD_NEW_TRANSACTION, {
-                                            addressFrom: data.addressFrom,
-                                            addressTo: data.addressTo,
-                                            amount: data.amount,
-                                            confirmationNumber: data.confirmationNumber,
-                                            blockNumber: data.blockNumber,
-                                        })
-                                    )
-                                })
-                            })
-                        }
-                    }
-                    // todo: we send money to somebody??
-                    if(tx.from){
-                        const addressFromItem = addressList[tx.from.toLowerCase()]
-                        if(addressFromItem){
-
-                        }
-                    }
-                })
-            })
+            // node.getBlockByNumber(lastBlockNumber, (err, block)=>{
+            //     debug(`block #${lastBlockNumber}`)
+            //     if(err || null == block){
+            //         debug(`blockchain getBlockByNumber error: ${err}`)
+            //         return finish()
+            //     }
+            //
+            //     const len = block.transactions.length
+            //     debug(`number of tx: ${len}`)
+            //     if(len == 0){
+            //         finish(lastBlockNumber, lastBlock)
+            //     }
+            //     block.transactions.map((tx, i)=>{
+            //         if(len == i + 1){
+            //             finish(lastBlockNumber, lastBlock)
+            //         }
+            //         if(tx.to){
+            //             const addressToItem = addressList[tx.to.toLowerCase()]
+            //             if(addressToItem){
+            //                 debug(`address found: ${addressToItem.address}`)
+            //                 const amount = tx.value * 10**-18
+            //                 Transaction.findOne({txId: tx.hash}, (err, dbTx)=>{
+            //                     if(!dbTx) {
+            //                         dbTx = new Transaction()
+            //                         dbTx.txId = tx.hash
+            //                     }
+            //                     dbTx.addressFrom = tx.from
+            //                     dbTx.addressTo = tx.to
+            //                     dbTx.amount = amount
+            //                     dbTx.blockNumber = lastBlockNumber
+            //                     dbTx.type = TYPE.INPUT
+            //                     dbTx.save((err, data)=>{
+            //                         debug(`tx saved ${data.txId}, address: ${data.addressTo}`)
+            //                         Transaction.find({addressTo: tx.to}, (err, data)=>{
+            //                             if(data){
+            //                                 let balance: number = 0
+            //                                 data.map(txItem=>{
+            //                                     if(txItem.type == TYPE.INPUT){
+            //                                         balance += Number(txItem.amount)
+            //                                     }
+            //                                     else{
+            //                                         balance -= Number(txItem.amount)
+            //                                     }
+            //                                 })
+            //                                 addressToItem.balance = balance
+            //                                 addressToItem.save((err, savedItem)=>{
+            //                                     kc.send(buildMessage(METHOD_NEW_BALANCE, {
+            //                                             address: tx.to,
+            //                                             txId: tx.hash,
+            //                                             amount: amount,
+            //                                             totalBalance: balance,
+            //                                         })
+            //                                     )
+            //                                 });
+            //                             }
+            //                         })
+            //                         kc.send(buildMessage(METHOD_NEW_TRANSACTION, {
+            //                                 addressFrom: data.addressFrom,
+            //                                 addressTo: data.addressTo,
+            //                                 amount: data.amount,
+            //                                 confirmationNumber: data.confirmationNumber,
+            //                                 blockNumber: data.blockNumber,
+            //                             })
+            //                         )
+            //                     })
+            //                 })
+            //             }
+            //         }
+            //         // todo: we send money to somebody??
+            //         if(tx.from){
+            //             const addressFromItem = addressList[tx.from.toLowerCase()]
+            //             if(addressFromItem){
+            //
+            //             }
+            //         }
+            //     })
+            // })
         })
     });
 }
