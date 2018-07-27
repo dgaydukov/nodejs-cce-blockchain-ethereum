@@ -3,6 +3,7 @@
  */
 
 require('module-alias/register')
+import {Promise} from "bluebird"
 const debug = require("debug")("bcheck")
 import {default as config} from "@root/config.json"
 import {Address} from "@db/models/address"

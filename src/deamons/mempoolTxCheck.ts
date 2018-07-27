@@ -6,13 +6,13 @@
 require('module-alias/register')
 
 import {Promise} from "bluebird"
-const debug = require("debug")("mptheck")
 import {KafkaConnector} from "@kafka/kafkaConnector"
 import {Address} from "@db/models/address"
 import {MempoolTx} from "@db/models/mempoolTx"
 import {Transaction} from "@db/models/transaction"
 import {EthereumNode} from "@blockchain/ethereumNode"
 import {buildMessage} from "@deamons/helpers"
+const debug = require("debug")("mptheck")
 
 const RUN_TIME = 10
 const METHOD_NEW_MEMPOOL_TX = "newMempoolTx"
@@ -33,7 +33,6 @@ const run = () => {
                     debug(`-------------finish-------------`)
                 })
                 .catch((ex)=>{
-                    //debug(ex)
                     debug(`Error: ${ex}`)
                 })
                 .finally(()=>{

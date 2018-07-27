@@ -26,8 +26,11 @@ Promise.mapSeries(promiseList, func => {
     })
 
 
-
-
+/**
+ * The same stuff achieved by array.reduce method
+ *
+ * @param promiseList
+ */
 const seqPromise = (promiseList)=>{
     const results = [];
     return promiseList.reduce((p, item)=>{

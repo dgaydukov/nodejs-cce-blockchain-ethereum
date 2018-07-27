@@ -1,5 +1,5 @@
 /**
- * Application enter point
+ * Application entry point
  */
 
 
