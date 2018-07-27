@@ -11,6 +11,7 @@
     "build": "./node_modules/typescript/bin/tsc",
     "watch": "./node_modules/typescript/bin/tsc --watch",
     "bcheck": "pm2 startOrReload dev.bcheck.ecosystem.json",
+    "aa-bcheck": "pm2 startOrReload dev.aa-bcheck.ecosystem.json",
     "txcheck": "pm2 startOrReload dev.txcheck.ecosystem.json",
     "mptcheck": "pm2 startOrReload dev.mptcheck.ecosystem.json"
   },
