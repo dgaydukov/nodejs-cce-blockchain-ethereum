@@ -26,6 +26,7 @@ export class TransactionInfo{
                         addressFrom: tx.addressFrom,
                         addressTo: tx.addressTo,
                         amount: tx.amount,
+                        fee: tx.fee,
                         type: tx.type,
                     }
                 })

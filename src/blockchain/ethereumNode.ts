@@ -29,8 +29,11 @@ export class EthereumNode{
         return eth.personal.newAccount(password)
     }
 
-    getTransaction(txId){
+    getTxById(txId){
         return eth.getTransaction(txId)
+    }
+    getTxReceiptById(txId){
+        return eth.getTransactionReceipt(txId)
     }
 
     getMempoolTxContent(){

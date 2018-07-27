@@ -61,7 +61,7 @@ const check = (node, kc) => {
                 debug(`number of tx to check: ${dbTxList.length}`)
                 const promiseList = []
                 dbTxList.map(tx=> {
-                    promiseList.push(node.getTransaction(tx.txId))
+                    promiseList.push(node.getTxById(tx.txId))
                 })
                 return Promise.all([lastBlockNumber, dbTxList, ...promiseList])
             })

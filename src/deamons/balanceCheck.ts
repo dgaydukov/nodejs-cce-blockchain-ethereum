@@ -77,13 +77,16 @@ const check = (node, kc) =>{
                 debug(`block #${dbLastSyncBlockNumber.blockNumber}`)
                 debug(`number of tx: ${nodeBlock.transactions.length}`)
                 nodeBlock.transactions.map(tx=>{
-                    const txFee = node.fromWei((tx.gas * tx.gasPrice).toString())
                     if(tx.to && addressList[tx.to.toLowerCase()]) {
                         const addressToItem = addressList[tx.to.toLowerCase()]
                         debug(`address found: ${addressToItem.address}`)
                         const txAmount = node.fromWei(tx.value)
-                        Transaction.findOne({txId: tx.hash})
-                            .then(dbTx => {
+                        const dbTx = Transaction.findOne({txId: tx.hash})
+                        const txReceipt = node.getTxReceiptById(tx.hash)
+                            Promise.all([dbTx, txReceipt])
+                            .then(data => {
+                                let [dbTx, txReceipt] = data
+                                const txFee = node.fromWei((txReceipt.gasUsed * tx.gasPrice).toString())
                                 if (!dbTx) {
                                     dbTx = new Transaction()
                                     dbTx.txId = tx.hash

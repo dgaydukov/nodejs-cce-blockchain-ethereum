@@ -48,7 +48,6 @@ const check = (node, kc) => {
      *  For test purpose you can clear latestblock & transaction
      *  LatestBlock.collection.drop()
      */
-
     return new Promise((resolve, reject)=>{
         const addressData = Address.find({})
         const mempoolTxData = MempoolTx.find({})

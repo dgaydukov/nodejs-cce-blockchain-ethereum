@@ -149,6 +149,9 @@ eth.sendTransaction({from:"0x3740642a96f3833bf15983950dc0d2f9a261137c", to:"0xc7
 # get info about transaction
 eth.getTransaction("0x410d4064fe25aebd12547c52877e5031af37b130ba1944917169e81c3473d722")
 
+# get tx receipt, useful if you need to calculate tx fee, because here you can get actual gas used by tx
+eth.getTransactionReceipt("0x410d4064fe25aebd12547c52877e5031af37b130ba1944917169e81c3473d722")
+
 # get txpool transaction (need to pass txpool when run ethereum node)
 txpool.content
 ```
