@@ -30,18 +30,18 @@ export class KafkaConnector{
         this.client = new kafka.KafkaClient({kafkaHost: config.KAFKA_CONNECTION})
     }
 
-    send(message: Object, cb = null){
-        const producer = new kafka.Producer(this.client);
-        const payloads = [
-            { topic: config.KAFKA_TOPIC_SEND, messages: [JSON.stringify(message)]},
-        ];
-        producer.send(payloads,  (err, data)=>{
-            const messageId = data[config.KAFKA_TOPIC_SEND][0]
-            debug(`kafkaMessageId: ${messageId}`, message)
-            if(cb){
-                cb(messageId)
-            }
-        });
+    send(message: Object){
+        return new Promise((resolve, reject)=>{
+            const producer = new kafka.Producer(this.client);
+            const payloads = [
+                { topic: config.KAFKA_TOPIC_SEND, messages: [JSON.stringify(message)]},
+            ];
+            producer.send(payloads,  (err, data)=>{
+                const messageId = data[config.KAFKA_TOPIC_SEND][0]
+                debug(`kafkaMessageId: ${messageId}`, message)
+                resolve(messageId)
+            });
+        })
     }
 
     listen(){
@@ -86,9 +86,10 @@ export class KafkaConnector{
                                     gen.getAddress()
                                         .then((addressModel: any)=>{
                                             response.data.address = addressModel.address
-                                            this.send(response, (kmId)=>{
-                                                gen.updateKmId(addressModel._id, kmId)
-                                            })
+                                            this.send(response)
+                                                .then(kmId=>{
+                                                    gen.updateKmId(addressModel._id, kmId)
+                                                })
                                         })
                                         .catch(ex=>{
                                             response.error = {

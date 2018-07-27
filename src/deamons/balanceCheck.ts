@@ -77,15 +77,27 @@ const check = (node, kc) =>{
                 debug(`block #${dbLastSyncBlockNumber.blockNumber}`)
                 debug(`number of tx: ${nodeBlock.transactions.length}`)
                 nodeBlock.transactions.map(tx=>{
+
+                    let addressItem;
+                    let txType;
                     if(tx.to && addressList[tx.to.toLowerCase()]) {
-                        const addressToItem = addressList[tx.to.toLowerCase()]
-                        debug(`address found: ${addressToItem.address}`)
+                        addressItem = addressList[tx.to.toLowerCase()]
+                        txType = TYPE.INPUT
+                    }
+                    if(tx.from && addressList[tx.from.toLowerCase()]){
+                        addressItem = addressList[tx.from.toLowerCase()]
+                        txType = TYPE.OUTPUT
+                    }
+
+                    if(addressItem) {
+                        debug(`address found: ${addressItem.address}`)
                         const txAmount = node.fromWei(tx.value)
                         const dbTx = Transaction.findOne({txId: tx.hash})
                         const txReceipt = node.getTxReceiptById(tx.hash)
                             Promise.all([dbTx, txReceipt])
                             .then(data => {
                                 let [dbTx, txReceipt] = data
+                                debug("dbTx", dbTx)
                                 const txFee = node.fromWei((txReceipt.gasUsed * tx.gasPrice).toString())
                                 if (!dbTx) {
                                     dbTx = new Transaction()
@@ -96,11 +108,11 @@ const check = (node, kc) =>{
                                 dbTx.amount = txAmount
                                 dbTx.fee = txFee
                                 dbTx.blockNumber = dbLastSyncBlockNumber.blockNumber
-                                dbTx.type = TYPE.INPUT
+                                dbTx.type = txType
                                 return dbTx.save()
                             })
                             .then(data => {
-                                debug(`tx saved ${data.txId}, address: ${data.addressTo}`)
+                                debug(`tx saved ${data.txId}, address: ${addressItem.address}`)
                                 kc.send(
                                     buildMessage(METHOD_NEW_TRANSACTION, {
                                         addressFrom: data.addressFrom,
@@ -111,9 +123,14 @@ const check = (node, kc) =>{
                                         blockNumber: data.blockNumber,
                                     })
                                 )
-                                return Transaction.find({addressTo: tx.to})
+                                return Transaction.find({$or: [
+                                        {addressFrom: {$regex: addressItem.address, $options: 'i'}},
+                                        {addressTo: {$regex: addressItem.address, $options: 'i'}}
+                                    ]
+                                })
                             })
                             .then(txList => {
+                                //recalculate balance
                                 let balance: number = 0
                                 txList.map(txItem => {
                                     if (txItem.type == TYPE.INPUT) {
@@ -124,8 +141,8 @@ const check = (node, kc) =>{
                                         balance -= Number(txItem.fee)
                                     }
                                 })
-                                addressToItem.balance = balance
-                                return addressToItem.save()
+                                addressItem.balance = balance
+                                return addressItem.save()
                             })
                             .then(data => {
                                 kc.send(
@@ -137,10 +154,6 @@ const check = (node, kc) =>{
                                     })
                                 )
                             })
-                    }
-                    // todo: we send money to somebody??
-                    if(tx.from && addressList[tx.from.toLowerCase()]){
-                        const addressFromItem = addressList[tx.from.toLowerCase()]
                     }
                 })
                 dbLastSyncBlockNumber.save()

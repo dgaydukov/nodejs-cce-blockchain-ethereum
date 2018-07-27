@@ -44,12 +44,8 @@ export class TransactionBuilder {
                     })
                     return tx.save()
                 })
-                .then(txItem=>{
-                    resolve(txItem)
-                })
-                .catch(ex=>{
-                    reject(ex)
-                })
+                .then(resolve)
+                .catch(reject)
         })
     }
 }
