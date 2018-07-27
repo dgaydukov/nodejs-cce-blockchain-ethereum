@@ -64,7 +64,7 @@ const check = (node, kc) =>{
                 })
                 if(!dbLastSyncBlockNumber){
                     dbLastSyncBlockNumber = new LatestBlock()
-                    dbLastSyncBlockNumber = config.ETHEREUM_SYNC_START_BLOCK
+                    dbLastSyncBlockNumber.blockNumber = config.ETHEREUM_SYNC_START_BLOCK
                 }
                 dbLastSyncBlockNumber.blockNumber = Number(dbLastSyncBlockNumber.blockNumber) + 1
                 const nodeBlock = node.getBlockByNumber(dbLastSyncBlockNumber.blockNumber)
@@ -75,69 +75,69 @@ const check = (node, kc) =>{
                 debug(`block #${dbLastSyncBlockNumber.blockNumber}`)
                 debug(`number of tx: ${nodeBlock.transactions.length}`)
                 nodeBlock.transactions.map(tx=>{
-                        if(tx.to){
-                            const addressToItem = addressList[tx.to.toLowerCase()]
-                            if(addressToItem){
-                                debug(`address found: ${addressToItem.address}`)
-                                const txAmount = node.fromWei(tx.value)
-                                Transaction.findOne({txId: tx.hash}, (err, dbTx)=>{
-                                    if(!dbTx) {
-                                        dbTx = new Transaction()
-                                        dbTx.txId = tx.hash
+                    const txFee = node.fromWei((tx.gas * tx.gasPrice).toString())
+                    if(tx.to && addressList[tx.to.toLowerCase()]) {
+                        const addressToItem = addressList[tx.to.toLowerCase()]
+                        debug(`address found: ${addressToItem.address}`)
+                        const txAmount = node.fromWei(tx.value)
+                        Transaction.findOne({txId: tx.hash})
+                            .then(dbTx => {
+                                if (!dbTx) {
+                                    dbTx = new Transaction()
+                                    dbTx.txId = tx.hash
+                                }
+                                dbTx.addressFrom = tx.from
+                                dbTx.addressTo = tx.to
+                                dbTx.amount = txAmount
+                                dbTx.fee = txFee
+                                dbTx.blockNumber = dbLastSyncBlockNumber.blockNumber
+                                dbTx.type = TYPE.INPUT
+                                return dbTx.save()
+                            })
+                            .then(data => {
+                                debug(`tx saved ${data.txId}, address: ${data.addressTo}`)
+                                kc.send(
+                                    buildMessage(METHOD_NEW_TRANSACTION, {
+                                        addressFrom: data.addressFrom,
+                                        addressTo: data.addressTo,
+                                        amount: data.amount,
+                                        fee: data.fee,
+                                        confirmationNumber: data.confirmationNumber,
+                                        blockNumber: data.blockNumber,
+                                    })
+                                )
+                                return Transaction.find({addressTo: tx.to})
+                            })
+                            .then(txList => {
+                                let balance: number = 0
+                                txList.map(txItem => {
+                                    if (txItem.type == TYPE.INPUT) {
+                                        balance += Number(txItem.amount)
                                     }
-                                    dbTx.addressFrom = tx.from
-                                    dbTx.addressTo = tx.to
-                                    dbTx.amount = txAmount
-                                    dbTx.blockNumber = dbLastSyncBlockNumber.blockNumber
-                                    dbTx.type = TYPE.INPUT
-                                    dbTx.save()
-                                        .then(data=>{
-                                            debug(`tx saved ${data.txId}, address: ${data.addressTo}`)
-                                            kc.send(
-                                                buildMessage(METHOD_NEW_TRANSACTION, {
-                                                    addressFrom: data.addressFrom,
-                                                    addressTo: data.addressTo,
-                                                    amount: data.amount,
-                                                    confirmationNumber: data.confirmationNumber,
-                                                    blockNumber: data.blockNumber,
-                                                })
-                                            )
-                                            return Transaction.find({addressTo: tx.to})
-                                        })
-                                        .then(txList=>{
-                                            let balance: number = 0
-                                            txList.map(txItem=>{
-                                                if(txItem.type == TYPE.INPUT){
-                                                    balance += Number(txItem.amount)
-                                                }
-                                                else{
-                                                    balance -= Number(txItem.amount)
-                                                }
-                                            })
-                                            addressToItem.balance = balance
-                                            addressToItem.save()
-                                                .then(data=>{
-                                                    kc.send(
-                                                        buildMessage(METHOD_NEW_BALANCE, {
-                                                            address: tx.to,
-                                                            txId: tx.hash,
-                                                            amount: txAmount,
-                                                            totalBalance: balance,
-                                                        })
-                                                    )
-                                                })
-                                            });
-                                        })
-                            }
-                        }
-                        // todo: we send money to somebody??
-                        if(tx.from){
-                            const addressFromItem = addressList[tx.from.toLowerCase()]
-                            if(addressFromItem){
-
-                            }
-                        }
-                    })
+                                    else {
+                                        balance -= Number(txItem.amount)
+                                        balance -= Number(txItem.fee)
+                                    }
+                                })
+                                addressToItem.balance = balance
+                                return addressToItem.save()
+                            })
+                            .then(data => {
+                                kc.send(
+                                    buildMessage(METHOD_NEW_BALANCE, {
+                                        address: data.address,
+                                        txId: tx.hash,
+                                        amount: txAmount,
+                                        totalBalance: data.balance,
+                                    })
+                                )
+                            })
+                    }
+                    // todo: we send money to somebody??
+                    if(tx.from && addressList[tx.from.toLowerCase()]){
+                        const addressFromItem = addressList[tx.from.toLowerCase()]
+                    }
+                })
                 dbLastSyncBlockNumber.save()
             })
             .then(resolve)

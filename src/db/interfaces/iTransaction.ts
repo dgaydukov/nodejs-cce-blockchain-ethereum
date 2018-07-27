@@ -7,6 +7,7 @@ export interface ITransaction {
     addressFrom: string;
     addressTo: string;
     amount: number;
+    fee: number;
     datetime: Date;
     confirmationNumber: number;
     blockNumber: number;
