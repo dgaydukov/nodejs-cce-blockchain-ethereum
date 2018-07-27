@@ -13,13 +13,15 @@ import {EthereumNode} from "@blockchain/ethereumNode"
 import {KafkaConnector} from "@kafka/kafkaConnector"
 import {buildMessage} from "@deamons/helpers"
 
-const RUN_TIME = 10
-const GET_BLOCK_BY_NUMBER = "eth_getBlockByNumber"
+
 const METHOD_NEW_BALANCE = "newBalance"
 const METHOD_NEW_TRANSACTION = "newTx"
 
 
+
+
 const run = () => {
+    const intervalTime = Number(process.env.RUN_INTERVAL) * 1000
     const node = new EthereumNode()
     const kc = new KafkaConnector()
     let allowRun = true
@@ -40,7 +42,7 @@ const run = () => {
         }
     }
     inner();
-    setInterval(inner, RUN_TIME * 1000)
+    setInterval(inner, intervalTime)
 }
 
 const check = (node, kc) =>{

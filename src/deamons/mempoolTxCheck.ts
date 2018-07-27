@@ -4,7 +4,7 @@
  * that means somebody (but not we) made transaction and move money to daemon.
  */
 require('module-alias/register')
-
+const debug = require("debug")("mptheck")
 import {Promise} from "bluebird"
 import {KafkaConnector} from "@kafka/kafkaConnector"
 import {Address} from "@db/models/address"
@@ -12,13 +12,14 @@ import {MempoolTx} from "@db/models/mempoolTx"
 import {Transaction} from "@db/models/transaction"
 import {EthereumNode} from "@blockchain/ethereumNode"
 import {buildMessage} from "@deamons/helpers"
-const debug = require("debug")("mptheck")
 
-const RUN_TIME = 10
+
 const METHOD_NEW_MEMPOOL_TX = "newMempoolTx"
 
 
+
 const run = () => {
+    const intervalTime = Number(process.env.RUN_INTERVAL) * 1000
     const node = new EthereumNode()
     const kc = new KafkaConnector()
     let allowRun = true
@@ -39,7 +40,7 @@ const run = () => {
         }
     }
     inner();
-    setInterval(inner, RUN_TIME * 1000)
+    setInterval(inner, intervalTime)
 }
 
 const check = (node, kc) => {
