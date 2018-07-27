@@ -24,33 +24,29 @@ const METHOD_TX_WENT_INTO_BLOCK = "txWentIntoBlock"
 const MAX_CONFIRMATION_NUMBER = process.env.MAX_CONFIRMATION_NUMBER
 
 
-
 const run = () => {
     const node = new EthereumNode()
     const kc = new KafkaConnector()
     let allowRun = true
-
-    setInterval(()=>{
-        if(allowRun){
+    const inner = ()=>{
+        if(allowRun) {
             debug("start")
             allowRun = false
             check(node, kc)
-                .then(()=>{
+                .then(() => {
                     debug(`-------------finish-------------`)
                 })
-                .catch((ex)=>{
+                .catch((ex) => {
                     debug(`Error: ${ex}`)
                 })
-                .finally(()=>{
+                .finally(() => {
                     allowRun = true
                 })
         }
-    }, RUN_TIME * 1000)
+    }
+    inner();
+    setInterval(inner, RUN_TIME * 1000)
 }
-
-
-
-
 
 const check = (node, kc) => {
     return new Promise((resolve, reject)=>{
@@ -65,19 +61,20 @@ const check = (node, kc) => {
                 dbTxList.map(tx=> {
                     promiseList.push(node.getTransaction(tx.txId))
                 })
-                const nodeTxList = Promise.all(promiseList)
-                return Promise.all([lastBlockNumber, dbTxList, nodeTxList])
+                return Promise.all([lastBlockNumber, dbTxList, ...promiseList])
             })
             .then(data=>{
-                const [lastBlockNumber, dbTxList, nodeTxList] = data
+                const [lastBlockNumber, dbTxList, ...nodeTxList] = data
+                let txGetIntoBlock = 0;
+                let txConfirmationNumberUpdated = 0;
                 nodeTxList.map(tx=>{
                     const confirmationNumber = lastBlockNumber - tx.blockNumber
                     const dbTx = dbTxList.filter(k=>k.txId==tx.hash)[0]
-                    //update blockNumber if null
-                    if(dbTx.blockNumber == 0){
+                    if(0 == dbTx.blockNumber){
                         dbTx.blockNumber = tx.blockNumber
                         dbTx.save()
                             .then(data=>{
+                                txGetIntoBlock++
                                 kc.send(buildMessage(METHOD_TX_WENT_INTO_BLOCK, {
                                         txId: data.txId,
                                         blockNumber: data.blockNumber,
@@ -90,6 +87,7 @@ const check = (node, kc) => {
                         dbTx.confirmationNumber = confirmationNumber
                         dbTx.save()
                             .then(data=>{
+                                txConfirmationNumberUpdated++
                                 kc.send(buildMessage(METHOD_NEW_CONFIRMATION, {
                                         txId: data.txId,
                                         blockNumber: data.blockNumber,
@@ -99,9 +97,12 @@ const check = (node, kc) => {
                             })
                     }
                 })
+                debug(`number of tx went into block: ${txGetIntoBlock}`)
+                debug(`number of tx with confirmationNumber updated: ${txConfirmationNumberUpdated}`)
             })
-            .catch(ex=>{
-                reject(ex)
-            })
+            .then(resolve)
+            .catch(reject)
     })
 }
+
+run();

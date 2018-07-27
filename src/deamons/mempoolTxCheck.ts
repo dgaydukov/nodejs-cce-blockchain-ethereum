@@ -18,28 +18,28 @@ const RUN_TIME = 10
 const METHOD_NEW_MEMPOOL_TX = "newMempoolTx"
 
 
-
 const run = () => {
     const node = new EthereumNode()
     const kc = new KafkaConnector()
     let allowRun = true
-
-    setInterval(()=>{
-        if(allowRun){
+    const inner = ()=>{
+        if(allowRun) {
             debug("start")
             allowRun = false
             check(node, kc)
-                .then(()=>{
+                .then(() => {
                     debug(`-------------finish-------------`)
                 })
-                .catch((ex)=>{
+                .catch((ex) => {
                     debug(`Error: ${ex}`)
                 })
-                .finally(()=>{
+                .finally(() => {
                     allowRun = true
                 })
         }
-    }, RUN_TIME * 1000)
+    }
+    inner();
+    setInterval(inner, RUN_TIME * 1000)
 }
 
 const check = (node, kc) => {
@@ -116,15 +116,10 @@ const check = (node, kc) => {
                             })
                     }
                 })
-                return inputTxNumber
-            })
-            .then(inputTxNumber=>{
                 debug(`number of incoming tx in mempool: ${inputTxNumber}`)
-                resolve()
             })
-            .catch(ex=>{
-                reject(ex)
-            })
+            .then(resolve)
+            .catch(reject)
     })
 }
 

@@ -86,7 +86,7 @@ export class EthereumNode{
                 .then(data=>{
                     let totalBalance: number = 0
                     data.map(balance=>{
-                        totalBalance += Number(web3.utils.fromWei(balance, "ether"))
+                        totalBalance += this.fromWei(balance)
                     })
                     debug(`total balance is: ${totalBalance}`)
                     return totalBalance
@@ -94,6 +94,13 @@ export class EthereumNode{
                 .then(resolve)
                 .catch(reject)
             })
+    }
+
+    toWei(amount){
+        return Number(web3.utils.toWei(amount, "ether"))
+    }
+    fromWei(amount){
+        return Number(web3.utils.fromWei(amount, "ether"))
     }
 }
 
