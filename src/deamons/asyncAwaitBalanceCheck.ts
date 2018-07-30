@@ -101,16 +101,10 @@ const check = async(node, kc) => {
                 dbTx.blockNumber = dbLastSyncBlockNumber.blockNumber
                 dbTx.type = txType
                 const data = await dbTx.save()
+
                 debug(`tx saved ${data.txId}, address: ${addressItem.address}`)
                 kc.send(
-                    buildMessage(METHOD_NEW_TRANSACTION, {
-                        addressFrom: data.addressFrom,
-                        addressTo: data.addressTo,
-                        amount: data.amount,
-                        fee: data.fee,
-                        confirmationNumber: data.confirmationNumber,
-                        blockNumber: data.blockNumber,
-                    })
+                    buildMessage(METHOD_NEW_TRANSACTION, data)
                 )
                 const dbTxList = await Transaction.find({$or: [
                         {addressFrom: {$regex: addressItem.address, $options: 'i'}},
