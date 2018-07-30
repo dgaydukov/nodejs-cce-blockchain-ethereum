@@ -1,6 +1,6 @@
 {
-  "name": "nodejs-cce-blockchain-ethereum--aa-bcheck",
-  "script": "dist/deamons/aa-balanceCheck.js",
+  "name": "nodejs-cce-blockchain-ethereum--aabcheck",
+  "script": "dist/deamons/asyncAwaitBalanceCheck.js",
   "autorestart": true,
   "watch": [ "dist" ],
   "ignore_watch": [ "src", "node_modules" ],

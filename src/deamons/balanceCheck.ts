@@ -97,7 +97,6 @@ const check = (node, kc) =>{
                             Promise.all([dbTx, txReceipt])
                             .then(data => {
                                 let [dbTx, txReceipt] = data
-                                debug("dbTx", dbTx)
                                 const txFee = node.fromWei((txReceipt.gasUsed * tx.gasPrice).toString())
                                 if (!dbTx) {
                                     dbTx = new Transaction()
