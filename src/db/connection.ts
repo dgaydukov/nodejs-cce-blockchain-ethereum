@@ -1,5 +1,6 @@
 
 import mongoose = require("mongoose")
+import {Promise} from "bluebird"
 import {default as config} from "@root/config.json"
 
 mongoose.Promise = Promise
