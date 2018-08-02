@@ -7,12 +7,11 @@ export class AddressGenerator {
         const node = new EthereumNode()
         const password = Math.random().toString(36).slice(-8)
         const newAddress = await node.getNewAddress(password)
-        const address = new Address({
+        const dbAddress = new Address({
             address: newAddress,
             password: password
         })
-        const dbAddress = await address.save()
-        return dbAddress
+        return dbAddress.save()
     }
 
     async updateKmId(id, kmId){

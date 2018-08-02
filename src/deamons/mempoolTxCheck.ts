@@ -29,13 +29,12 @@ const run = () => {
             allowRun = false
             check(node, kc)
                 .then(() => {
+                    allowRun = true
                     debug(`-------------finish-------------`)
                 })
                 .catch((ex) => {
-                    debug(`Error: ${ex}`)
-                })
-                .finally(() => {
                     allowRun = true
+                    debug(`Error: ${ex}`)
                 })
         }
     }

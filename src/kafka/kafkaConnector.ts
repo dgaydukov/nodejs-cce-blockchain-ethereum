@@ -53,109 +53,74 @@ export class KafkaConnector{
          * KafkaMessage.collection.drop()
          */
 
-        KafkaMessage.find({})
-            .then(data=>{
-                const hashList = {}
-                data.map(item=>{
-                    hashList[item.hash] = 1
-                })
-                return hashList
-            })
-            .then(hashList=>{
-                const consumer = new kafka.Consumer(
-                    this.client,
-                    [
-                        { topic: config.KAFKA_TOPIC_LISTEN, partition: 0},
-                    ],
-                    {
-                        autoCommit: false,
-                        fromOffset: true,
-                    }
-                );
-                consumer.on('message', (message: iMessage)=>{
-                    const hash = sha256(message.topic + message.value + message.offset)
-                    if(hashList[hash]){
-                        return
-                    }
-                    debug(`------------new kafka message------------`, JSON.stringify(message))
-                    const km = new KafkaMessage(Object.assign({}, message, {hash: hash}))
-                    km.save()
-                        .then(kmData=>{
-                            const msg = JSON.parse(message.value)
-                            const response = Object.assign({}, msg)
-                            switch(msg.metadata.methodName){
-                                case METHOD_GET_ADDRESS:
-                                    let gen = new AddressGenerator()
-                                    gen.getAddress()
-                                        .then((addressModel: any)=>{
-                                            response.data.address = addressModel.address
-                                            this.send(response)
-                                                .then(kmId=>{
-                                                    gen.updateKmId(addressModel._id, kmId)
-                                                })
-                                        })
-                                        .catch(ex=>{
-                                            response.error = {
-                                                message: ex.toString()
-                                            }
-                                            this.send(response)
-                                        })
-                                    break;
+        const dbKmList = await KafkaMessage.find()
+        const hashList = {}
+        dbKmList.map(item=>{
+            hashList[item.hash] = 1
+        })
+        const consumer = new kafka.Consumer(
+            this.client,
+            [
+                { topic: config.KAFKA_TOPIC_LISTEN, partition: 0},
+            ],
+            {
+                autoCommit: false,
+                fromOffset: true,
+            }
+        )
+        consumer.on('message', async (message: iMessage)=>{
+            try{
+                const hash = sha256(message.topic + message.value + message.offset)
+                if(hashList[hash]){
+                    return
+                }
+                debug(`------------new kafka message------------`, JSON.stringify(message))
+                const km = new KafkaMessage(Object.assign({}, message, {hash: hash}))
+                km.save()
+                const msg = JSON.parse(message.value)
+                const response = Object.assign({}, msg)
+                switch(msg.metadata.methodName){
+                    case METHOD_GET_ADDRESS:
+                        let gen = new AddressGenerator()
+                        const dbAddress = await gen.getAddress()
+                        response.data.address = dbAddress.address
+                        const kmId = await this.send(response)
+                        gen.updateKmId(dbAddress._id, kmId)
+                        break;
 
-                                case METHOD_SEND_TRANSACTION:
-                                    let tx = new TransactionBuilder(msg.data.from, msg.data.to, msg.data.amount)
-                                    tx.run()
-                                        .then(txItem=>{
-                                            response.data.txId = txItem.txId
-                                            response.data.type = txItem.type
-                                        })
-                                        .catch(ex=>{
-                                            response.error = {
-                                                message: ex.toString()
-                                            }
-                                        })
-                                    break;
+                    case METHOD_SEND_TRANSACTION:
+                        let tx = new TransactionBuilder(msg.data.from, msg.data.to, msg.data.amount)
+                        const dbTx = await tx.run()
+                        response.data.txId = dbTx.txId
+                        response.data.type = dbTx.type
+                        this.send(response)
+                        break;
 
+                    case METHOD_GET_ADDRESS_INFO:
+                        const addrInfo = new AddressInfo(msg.data.address)
+                        const addressInfo = await addrInfo.get()
+                        Object.assign(response.data, addressInfo)
+                        this.send(response)
+                        break;
 
+                    case METHOD_GET_TRANSACTION_INFO:
+                        const txInfo = new TransactionInfo(msg.data.txId)
+                        const _dbTx = await txInfo.get()
+                        Object.assign(response.data, _dbTx)
+                        this.send(response)
+                        break;
 
-                                case METHOD_GET_ADDRESS_INFO:
-                                    const addrInfo = new AddressInfo(msg.data.address)
-                                    addrInfo.get()
-                                        .then(addressInfo=>{
-                                            Object.assign(response.data, addressInfo)
-                                        })
-                                        .catch(ex=>{
-                                            response.error = {
-                                                message: ex.toString()
-                                            }
-                                        })
-                                    break;
-
-                                case METHOD_GET_TRANSACTION_INFO:
-                                    const txInfo = new TransactionInfo(msg.data.txId)
-                                    txInfo.get()
-                                        .then(txInfo=>{
-                                            Object.assign(response.data, txInfo)
-                                        })
-                                        .catch(ex=>{
-                                            response.error = {
-                                                message: ex.toString()
-                                            }
-                                        })
-                                    break;
-
-                                default:
-                                    response.error = {
-                                        message: `unknown kafka request method: ${msg.metadata.methodName}`,
-                                    }
-                                    this.send(response)
-                                    break;
-                            }
-                        })
-                })
-            })
-            .catch(ex=>{
-                debug(`Error on KafkaMessage.listen: ${ex}`)
-            })
+                    default:
+                        response.error = {
+                            message: `unknown kafka request method: ${msg.metadata.methodName}`,
+                        }
+                        this.send(response)
+                        break;
+                }
+            }
+            catch (ex) {
+                debug(`Error on KafkaConnector.listen: ${ex}`)
+            }
+        })
     }
 }
