@@ -16,7 +16,7 @@ import {Promise} from "bluebird"
 import {KafkaConnector} from "@kafka/kafkaConnector"
 import {Transaction} from "@db/models/transaction"
 import {EthereumNode} from "@blockchain/ethereumNode"
-import {buildMessage} from "@deamons/helpers"
+import {buildMessage} from "src/daemons/helpers"
 
 
 const METHOD_NEW_CONFIRMATION = "newConfirmation"

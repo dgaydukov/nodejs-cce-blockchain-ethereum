@@ -11,7 +11,7 @@ import {Address} from "@db/models/address"
 import {MempoolTx} from "@db/models/mempoolTx"
 import {Transaction} from "@db/models/transaction"
 import {EthereumNode} from "@blockchain/ethereumNode"
-import {buildMessage} from "@deamons/helpers"
+import {buildMessage} from "src/daemons/helpers"
 
 
 const METHOD_NEW_MEMPOOL_TX = "newMempoolTx"

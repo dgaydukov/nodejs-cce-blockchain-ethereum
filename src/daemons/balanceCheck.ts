@@ -11,7 +11,7 @@ import {Transaction, TYPE} from "@db/models/transaction"
 import {LatestBlock} from "@db/models/latestBlock"
 import {EthereumNode} from "@blockchain/ethereumNode"
 import {KafkaConnector} from "@kafka/kafkaConnector"
-import {buildMessage} from "@deamons/helpers"
+import {buildMessage} from "src/daemons/helpers"
 
 
 const METHOD_NEW_BALANCE = "newBalance"

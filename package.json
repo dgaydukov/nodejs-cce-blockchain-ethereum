@@ -21,7 +21,7 @@
     "@root": "dist",
     "@blockchain": "dist/blockchain",
     "@db": "dist/db",
-    "@deamons": "dist/deamons",
+    "@daemons": "dist/daemons",
     "@kafka": "dist/kafka",
     "@logic": "dist/logic"
   },

@@ -16,7 +16,7 @@
       "@root/*": ["src/*"],
       "@blockchain/*": ["src/blockchain/*"],
       "@db/*": ["src/db/*"],
-      "@deamons/*": ["src/deamons/*"],
+      "@daemons/*": ["src/daemons/*"],
       "@kafka/*": ["src/kafka/*"],
       "@logic/*": ["src/logic/*"]
     }
