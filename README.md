@@ -117,14 +117,43 @@ Command to run inside geth console
 ```shell
 # run geth
 geth --testnet --syncmode fast --rpc --rpcapi eth,net,web3,personal,txpool --rpcport=8545 --cache 1024
+```
 
+If you want to run it as ethereum at one command just add this line to `~/.bashrc`
+
+```shell
+# open bashrc file
+nano ~/.bashrc
+
+# add alias to run geth
+alias ethereumd='geth --testnet --syncmode fast --rpc --rpcapi eth,net,web3,personal,txpool --rpcport=8545 --cache 1024 > /dev/null 2>&1'
+
+reload bashrc
+source ~/.bashrc
+
+# run as daemon
+ethereumd
+```
+
+To check that geth has synced you should use `eth.syncing`
+```shell
+# attach to testnet
+geth --testnet attach
+
+# run command. If it return false, that means that you node is up to date and you can start working
+eth.syncing
+```
+
+
+Other commands
+
+```shell
 # attach to geth console
 geth attach http://:8545
 geth attach ~/.ethereum/testnet/geth.ipc
 
 # exit from geth console
 exit
-
 
 #vew list of all accounts
 ls -lh ~/.ethereum/keystore/
