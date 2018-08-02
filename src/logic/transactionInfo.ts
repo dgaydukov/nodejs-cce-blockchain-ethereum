@@ -12,30 +12,11 @@ export class TransactionInfo{
         this.txId = txId
     }
 
-    get(){
-        return new Promise((resolve, reject)=>{
-            Transaction.findOne({txId: this.txId})
-                .then(tx=> {
-                    if(!tx){
-                        throw new Error("Transaction doesn't exist")
-                    }
-                    return {
-                        txId: tx.txId,
-                        confirmationNumber: tx.confirmationNumber,
-                        blockNumber: tx.blockNumber,
-                        addressFrom: tx.addressFrom,
-                        addressTo: tx.addressTo,
-                        amount: tx.amount,
-                        fee: tx.fee,
-                        type: tx.type,
-                    }
-                })
-                .then(txInfo=>{
-                    resolve(txInfo)
-                })
-                .catch(ex=>{
-                    reject(ex)
-                })
-        })
+    async get(){
+        const dbTx = await Transaction.findOne({txId: this.txId})
+        if(!dbTx){
+            throw new Error("Transaction doesn't exist")
+        }
+        return dbTx
     }
 }
