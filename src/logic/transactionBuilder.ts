@@ -21,31 +21,24 @@ export class TransactionBuilder {
         this.amount = amount;
     }
 
-    run(){
-        return new Promise((resolve, reject)=>{
-            Address.findOne({address: {$regex: this.addressFrom, $options: 'i'}})
-                .then(addressItem=>{
-                    if(!addressItem){
-                        throw new Error("Address doesn't exist")
-                    }
-                    if(addressItem.balance < this.amount){
-                        throw new Error(`Not enough money, account balance is: ${addressItem.balance}`)
-                    }
-                    const node = new EthereumNode()
-                    return node.sendTransaction(this.addressFrom, this.addressTo, this.amount, addressItem.password)
-                })
-                .then(receipt=>{
-                    const tx = new Transaction({
-                        txId: receipt.transactionHash,
-                        addressFrom: this.addressFrom,
-                        addressTo: this.addressTo,
-                        amount: this.amount,
-                        type: TYPE.OUTPUT
-                    })
-                    return tx.save()
-                })
-                .then(resolve)
-                .catch(reject)
+    async run(){
+        const dbAddress = await Address.findOne({address: {$regex: this.addressFrom, $options: 'i'}})
+        if(!dbAddress){
+            throw new Error("Address doesn't exist")
+        }
+        if(dbAddress.balance < this.amount){
+            throw new Error(`Not enough money, account balance is: ${dbAddress.balance}`)
+        }
+        const node = new EthereumNode()
+        const tx = await node.sendTransaction(this.addressFrom, this.addressTo, this.amount, dbAddress.password)
+        const dbTx = new Transaction({
+            txId: tx.transactionHash,
+            addressFrom: this.addressFrom,
+            addressTo: this.addressTo,
+            amount: this.amount,
+            type: TYPE.OUTPUT
         })
+        const data = dbTx.save()
+        return data
     }
 }

@@ -53,12 +53,12 @@ export class EthereumNode{
         if(!unlock){
             throw new Error(`Can't open account, maybe wrong password`)
         }
-        const txId = eth.sendTransaction({
+        const tx = eth.sendTransaction({
             from: from,
             to: to,
             value: web3.utils.toWei(amount.toString())
         })
-        return txId
+        return tx
     }
 
     getBalance(address){

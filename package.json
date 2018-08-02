@@ -10,8 +10,8 @@
     "log": "pm2 logs --timestamp 1",
     "build": "./node_modules/typescript/bin/tsc",
     "watch": "./node_modules/typescript/bin/tsc --watch",
+    "deamons": "npm run bcheck && npm run txcheck && npm run mptcheck",
     "bcheck": "pm2 startOrReload dev.bcheck.ecosystem.json",
-    "aa-bcheck": "pm2 startOrReload dev.aabcheck.ecosystem.json",
     "txcheck": "pm2 startOrReload dev.txcheck.ecosystem.json",
     "mptcheck": "pm2 startOrReload dev.mptcheck.ecosystem.json"
   },

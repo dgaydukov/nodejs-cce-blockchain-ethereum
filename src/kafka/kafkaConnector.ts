@@ -37,6 +37,9 @@ export class KafkaConnector{
                 { topic: config.KAFKA_TOPIC_SEND, messages: [JSON.stringify(message)]},
             ];
             producer.send(payloads,  (err, data)=>{
+                if(err){
+                    return reject(err)
+                }
                 const messageId = data[config.KAFKA_TOPIC_SEND][0]
                 debug(`kafkaMessageId: ${messageId}`, message)
                 resolve(messageId)
@@ -44,7 +47,7 @@ export class KafkaConnector{
         })
     }
 
-    listen(){
+    async listen(){
         /**
          * for testing purpose you can clear message table
          * KafkaMessage.collection.drop()
@@ -111,9 +114,6 @@ export class KafkaConnector{
                                                 message: ex.toString()
                                             }
                                         })
-                                        .finally(()=>{
-                                            this.send(response)
-                                        })
                                     break;
 
 
@@ -129,9 +129,6 @@ export class KafkaConnector{
                                                 message: ex.toString()
                                             }
                                         })
-                                        .finally(()=>{
-                                            this.send(response)
-                                        })
                                     break;
 
                                 case METHOD_GET_TRANSACTION_INFO:
@@ -144,9 +141,6 @@ export class KafkaConnector{
                                             response.error = {
                                                 message: ex.toString()
                                             }
-                                        })
-                                        .finally(()=>{
-                                            this.send(response)
                                         })
                                     break;
 
