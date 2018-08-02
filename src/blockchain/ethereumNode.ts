@@ -48,55 +48,32 @@ export class EthereumNode{
         return eth.getBlock(number, true)
     }
 
-    sendTransaction(from, to, amount, unlockPassword){
-        return new Promise((resolve, reject)=>{
-            eth.personal.unlockAccount(from, unlockPassword, 30)
-                .then((isOpen) => {
-                    if(!isOpen){
-                        throw new Error(`Can't open account, maybe wrong password`)
-                    }
-                    return eth.sendTransaction({
-                        from: from,
-                        to: to,
-                        value: web3.utils.toWei(amount.toString())
-                    })
-                })
-                .then(receipt=>{
-                    resolve(receipt)
-                })
-                .catch(ex=>{
-                    reject(ex)
-                })
+    async sendTransaction(from, to, amount, unlockPassword){
+        const unlock = eth.personal.unlockAccount(from, unlockPassword, 30)
+        if(!unlock){
+            throw new Error(`Can't open account, maybe wrong password`)
+        }
+        const txId = eth.sendTransaction({
+            from: from,
+            to: to,
+            value: web3.utils.toWei(amount.toString())
         })
+        return txId
     }
 
     getBalance(address){
         return eth.getBalance(address);
     }
 
-    getTotalBalance(){
-        return new Promise((resolve, reject)=>{
-            let total = 0;
-            eth.getAccounts()
-                .then(data=>{
-                    debug(`number of accounts is: ${data.length}`)
-                    const promiseList = []
-                    data.map(address=>{
-                        promiseList.push(eth.getBalance(address))
-                    })
-                    return Promise.all(promiseList)
-                })
-                .then(data=>{
-                    let totalBalance: number = 0
-                    data.map(balance=>{
-                        totalBalance += this.fromWei(balance)
-                    })
-                    debug(`total balance is: ${totalBalance}`)
-                    return totalBalance
-                })
-                .then(resolve)
-                .catch(reject)
-            })
+    async getTotalBalance(){
+        const list = await eth.getAccounts()
+        const len = list.length
+        let total = 0
+        for(let i = 0; i < len; i++){
+            const balance = await eth.getBalance(list[i])
+            total += this.fromWei(balance)
+        }
+        return total
     }
 
     toWei(amount){
