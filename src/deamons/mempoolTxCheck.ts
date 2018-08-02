@@ -42,84 +42,65 @@ const run = () => {
     setInterval(inner, intervalTime)
 }
 
-const check = (node, kc) => {
+const check = async (node, kc) => {
     /**
      *  For test purpose you can clear latestblock & transaction
      *  LatestBlock.collection.drop()
      */
-    return new Promise((resolve, reject)=>{
-        const addressData = Address.find({})
-        const mempoolTxData = MempoolTx.find({})
-        Promise.all([addressData, mempoolTxData])
-            .then(data=>{
-                const [addressData, mempoolTxData] = data
-                debug(`number of address to watch: ${addressData.length}`)
-                debug(`number of mempool tx in db: ${mempoolTxData.length}`)
-                const addressList = {};
-                const mempoolTxList = {};
-                addressData.map(item=>{
-                    const address = item.address
-                    if(address){
-                        addressList[address.toLowerCase()] = item
-                    }
+    try{
+        const dbAddressList = await Address.find()
+        const dbMempoolTxList = await MempoolTx.find()
+        debug(`number of address to watch: ${dbAddressList.length}`)
+        debug(`number of mempool tx in db: ${dbMempoolTxList.length}`)
+        const addressList = {};
+        const mempoolTxList = {};
+        dbAddressList.map(item=>{
+            const address = item.address
+            if(address){
+                addressList[address.toLowerCase()] = item
+            }
+        })
+        dbMempoolTxList.map(txItem=>{
+            mempoolTxList[txItem.txId] = 1
+        })
+        const pool = await node.getMempoolTxContent()
+        const txWatchList = []
+        Object.keys(pool.pending).map(addressFrom => {
+            Object.keys(pool.pending[addressFrom]).map(key => {
+                const tx = pool.pending[addressFrom][key]
+                if (mempoolTxList[tx.hash]) {
+                    return
+                }
+                const newMpTx = new MempoolTx({
+                    txId: tx.hash
                 })
-                mempoolTxData.map(txItem=>{
-                    mempoolTxList[txItem.txId] = 1
-                })
-                return Promise.all([addressList, mempoolTxList, node.getMempoolTxContent()])
+                newMpTx.save()
+                txWatchList.push(tx)
             })
-            .then(data=> {
-                const [addressList, mempoolTxList, pool] = data
-                const txWatchList = []
-                Object.keys(pool.pending).map(addressFrom => {
-                    Object.keys(pool.pending[addressFrom]).map(key => {
-                        const tx = pool.pending[addressFrom][key]
-                        if (mempoolTxList[tx.hash]) {
-                            return
-                        }
-                        const newMpTx = new MempoolTx({
-                            txId: tx.hash
-                        })
-                        newMpTx.save()
-                        txWatchList.push(tx)
-                    })
+        })
+        const len = txWatchList.length
+        debug(`number of mempool tx to check: ${len}`)
+        let inputTxNumber = 0
+        txWatchList.map(async(tx)=>{
+            if(tx.to && addressList[tx.to.toLowerCase()]){
+                inputTxNumber++
+                debug(`address found: ${tx.to}`)
+                const amount = parseInt(tx.value, 16)*10**-18
+                const newTx = new Transaction({
+                    txId: tx.hash,
+                    addressFrom: tx.from,
+                    addressTo: tx.to,
+                    amount: amount,
                 })
-                return [addressList, txWatchList]
-            })
-            .then(data => {
-                const [addressList, txWatchList] = data
-                const len = txWatchList.length
-                debug(`number of mempool tx to check: ${len}`)
-                let inputTxNumber = 0
-                txWatchList.map(tx=>{
-                    if(tx.to && addressList[tx.to.toLowerCase()]){
-                        inputTxNumber++
-                        debug(`address found: ${tx.to}`)
-                        const amount = parseInt(tx.value, 16)*10**-18
-                        const newTx = new Transaction({
-                            txId: tx.hash,
-                            addressFrom: tx.from,
-                            addressTo: tx.to,
-                            amount: amount,
-                        })
-                        newTx.save()
-                            .then(txItem=>{
-                                kc.send(
-                                    buildMessage(METHOD_NEW_MEMPOOL_TX, {
-                                        txId: txItem.txId,
-                                        addressFrom: txItem.addressFrom,
-                                        addressTo: txItem.addressTo,
-                                        amount: txItem.amount,
-                                    })
-                                )
-                            })
-                    }
-                })
-                debug(`number of incoming tx in mempool: ${inputTxNumber}`)
-            })
-            .then(resolve)
-            .catch(reject)
-    })
+                const dbTx = await newTx.save()
+                kc.send(buildMessage(METHOD_NEW_MEMPOOL_TX, dbTx))
+            }
+        })
+        debug(`number of incoming tx in mempool: ${inputTxNumber}`)
+    }
+    catch(ex){
+        debug(`Error: ${ex}`)
+    }
 }
 
 
