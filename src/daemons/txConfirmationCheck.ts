@@ -17,10 +17,7 @@ import {KafkaConnector} from "@kafka/kafkaConnector"
 import {Transaction} from "@db/models/transaction"
 import {EthereumNode} from "@blockchain/ethereumNode"
 import {buildMessage} from "src/daemons/helpers"
-
-
-const METHOD_NEW_CONFIRMATION = "newConfirmation"
-const METHOD_TX_WENT_INTO_BLOCK = "txWentIntoBlock"
+import {METHOD_TX_WENT_INTO_BLOCK, METHOD_NEW_TX_CONFIRMATION} from "@root/constList"
 
 
 
@@ -76,7 +73,7 @@ const check = async (node, kc) => {
                     dbTx.confirmationNumber = confirmationNumber
                     const _dbTx = await dbTx.save()
                     txConfirmationNumberUpdated++
-                    kc.send(buildMessage(METHOD_NEW_CONFIRMATION, {
+                    kc.send(buildMessage(METHOD_NEW_TX_CONFIRMATION, {
                             txId: _dbTx.txId,
                             blockNumber: _dbTx.blockNumber,
                             confirmationNumber: _dbTx.confirmationNumber,

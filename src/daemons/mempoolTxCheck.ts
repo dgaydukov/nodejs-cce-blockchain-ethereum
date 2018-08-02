@@ -12,9 +12,7 @@ import {MempoolTx} from "@db/models/mempoolTx"
 import {Transaction} from "@db/models/transaction"
 import {EthereumNode} from "@blockchain/ethereumNode"
 import {buildMessage} from "src/daemons/helpers"
-
-
-const METHOD_NEW_MEMPOOL_TX = "newMempoolTx"
+import {METHOD_NEW_MEMPOOL_TX} from "@root/constList"
 
 
 

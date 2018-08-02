@@ -12,12 +12,7 @@ import {LatestBlock} from "@db/models/latestBlock"
 import {EthereumNode} from "@blockchain/ethereumNode"
 import {KafkaConnector} from "@kafka/kafkaConnector"
 import {buildMessage} from "src/daemons/helpers"
-
-
-const METHOD_NEW_BALANCE = "newBalance"
-const METHOD_NEW_TRANSACTION = "newTx"
-
-
+import {METHOD_NEW_TRANSACTION, METHOD_NEW_BALANCE} from "@root/constList"
 
 
 const run = () => {

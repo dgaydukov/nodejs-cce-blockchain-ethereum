@@ -8,11 +8,7 @@ import {TransactionBuilder} from "@logic/transactionBuilder"
 import {AddressInfo} from "@logic/addressInfo"
 import {TransactionInfo} from "@logic/transactionInfo"
 import {KafkaMessage} from "@db/models/kafkaMessage"
-
-const METHOD_GET_ADDRESS = "getAddress"
-const METHOD_SEND_TRANSACTION = "sendTransaction"
-const METHOD_GET_ADDRESS_INFO = "getAddressInfo"
-const METHOD_GET_TRANSACTION_INFO = "getTransactionInfo"
+import {METHOD_GET_ADDRESS,METHOD_SEND_TRANSACTION,METHOD_GET_ADDRESS_INFO,METHOD_GET_TRANSACTION_INFO} from "@root/constList"
 
 interface iMessage{
     topic: string,
