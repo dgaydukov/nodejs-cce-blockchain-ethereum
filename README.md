@@ -163,6 +163,15 @@ geth attach ~/.ethereum/testnet/geth.ipc
 # or attach to testnet
 geth --testnet attach
 
+# get block by number
+eth.getBlock(1000000)
+
+# get latest block
+eth.getBlock("latest")
+
+# get last block number
+eth.blockNumber
+
 # create new account with password: admin
 personal.newAccount("admin")
 
