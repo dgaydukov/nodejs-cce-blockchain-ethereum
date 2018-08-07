@@ -84,7 +84,7 @@ testing framework + assertion module + test doubles + code coverage
 * [Mocha](https://mochajs.org) - testing framework
 * [Chai](http://www.chaijs.com) - assertion module
 * [Sinon](http://sinonjs.org) - test doubles
-* [Mocha](https://github.com/gotwarlost/istanbul) - code coverage
+* [Istanbul](https://github.com/gotwarlost/istanbul) - code coverage
 
 ### Kafka
 
