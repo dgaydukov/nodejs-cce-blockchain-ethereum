@@ -19,75 +19,75 @@ import {EthereumNode} from "@blockchain/ethereumNode"
 import {buildMessage} from "src/daemons/helpers"
 import {METHOD_TX_WENT_INTO_BLOCK, METHOD_NEW_TX_CONFIRMATION} from "@root/constList"
 
-
-
-const run = () => {
-    const intervalTime = Number(process.env.RUN_INTERVAL) * 1000
-    const node = new EthereumNode()
-    const kc = new KafkaConnector()
-    let allowRun = true
-    const inner = ()=>{
-        if(allowRun) {
-            debug("start")
-            allowRun = false
-            check(node, kc)
-                .then(() => {
-                    allowRun = true
-                    debug(`-------------finish-------------`)
-                })
-                .catch((ex) => {
-                    allowRun = true
-                    debug(`Error: ${ex}`)
-                })
-        }
-    }
-    inner();
-    setInterval(inner, intervalTime)
-}
-
-const check = async (node, kc) => {
-    try{
-        const lastBlockNumber = await node.getBlockNumber()
-        const dbTxList = await Transaction.find({confirmationNumber: {$lt: process.env.MAX_CONFIRMATION_NUMBER}})
-        let txGetIntoBlock = 0;
-        let txConfirmationNumberUpdated = 0;
-        const len = dbTxList.length
-        debug(`number of tx to check: ${len}`)
-        for(let i = 0; i < len; i++){
-            const tx = await node.getTxById(dbTxList[i].txId)
-            if(tx.blockNumber){
-                const confirmationNumber = lastBlockNumber - tx.blockNumber
-                const dbTx = dbTxList.filter(k=>k.txId==tx.hash)[0]
-                if(0 == dbTx.blockNumber){
-                    dbTx.blockNumber = tx.blockNumber
-                    const _dbTx = await dbTx.save()
-                    txGetIntoBlock++
-                    kc.send(buildMessage(METHOD_TX_WENT_INTO_BLOCK, {
-                            txId: _dbTx.txId,
-                            blockNumber: _dbTx.blockNumber,
-                            confirmationNumber: confirmationNumber,
-                        })
-                    )
-                }
-                else if(confirmationNumber > dbTx.confirmationNumber){
-                    dbTx.confirmationNumber = confirmationNumber
-                    const _dbTx = await dbTx.save()
-                    txConfirmationNumberUpdated++
-                    kc.send(buildMessage(METHOD_NEW_TX_CONFIRMATION, {
-                            txId: _dbTx.txId,
-                            blockNumber: _dbTx.blockNumber,
-                            confirmationNumber: _dbTx.confirmationNumber,
-                        })
-                    )
-                }
+class TxConfirmationCheck{
+    run(){
+        const intervalTime = Number(process.env.RUN_INTERVAL) * 1000
+        const node = new EthereumNode()
+        const kc = new KafkaConnector()
+        let allowRun = true
+        const inner = ()=>{
+            if(allowRun) {
+                debug("start")
+                allowRun = false
+                this.check(node, kc)
+                    .then(() => {
+                        allowRun = true
+                        debug(`-------------finish-------------`)
+                    })
+                    .catch((ex) => {
+                        allowRun = true
+                        debug(`Error: ${ex}`)
+                    })
             }
         }
-        debug(`number of tx went into block: ${txGetIntoBlock}`)
-        debug(`number of tx with confirmationNumber updated: ${txConfirmationNumberUpdated}`)
+        inner();
+        setInterval(inner, intervalTime)
     }
-    catch(ex){
-        debug(`Error: ${ex}`)
+    async check(node, kc){
+        try{
+            const lastBlockNumber = await node.getBlockNumber()
+            const dbTxList = await Transaction.find({confirmationNumber: {$lt: process.env.MAX_CONFIRMATION_NUMBER}})
+            let txGetIntoBlock = 0;
+            let txConfirmationNumberUpdated = 0;
+            const len = dbTxList.length
+            debug(`number of tx to check: ${len}`)
+            for(let i = 0; i < len; i++){
+                const tx = await node.getTxById(dbTxList[i].txId)
+                if(tx.blockNumber){
+                    const confirmationNumber = lastBlockNumber - tx.blockNumber
+                    const dbTx = dbTxList.filter(k=>k.txId==tx.hash)[0]
+                    if(0 == dbTx.blockNumber){
+                        dbTx.blockNumber = tx.blockNumber
+                        const _dbTx = await dbTx.save()
+                        txGetIntoBlock++
+                        kc.send(buildMessage(METHOD_TX_WENT_INTO_BLOCK, {
+                                txId: _dbTx.txId,
+                                blockNumber: _dbTx.blockNumber,
+                                confirmationNumber: confirmationNumber,
+                            })
+                        )
+                    }
+                    else if(confirmationNumber > dbTx.confirmationNumber){
+                        dbTx.confirmationNumber = confirmationNumber
+                        const _dbTx = await dbTx.save()
+                        txConfirmationNumberUpdated++
+                        kc.send(buildMessage(METHOD_NEW_TX_CONFIRMATION, {
+                                txId: _dbTx.txId,
+                                blockNumber: _dbTx.blockNumber,
+                                confirmationNumber: _dbTx.confirmationNumber,
+                            })
+                        )
+                    }
+                }
+            }
+            debug(`number of tx went into block: ${txGetIntoBlock}`)
+            debug(`number of tx with confirmationNumber updated: ${txConfirmationNumberUpdated}`)
+        }
+        catch(ex){
+            debug(`Error: ${ex}`)
+        }
     }
 }
 
-run();
+const txcheck = new TxConfirmationCheck()
+txcheck.run()

@@ -15,130 +15,132 @@ import {buildMessage} from "src/daemons/helpers"
 import {METHOD_NEW_TRANSACTION, METHOD_NEW_BALANCE} from "@root/constList"
 
 
-const run = () => {
-    const intervalTime = Number(process.env.RUN_INTERVAL) * 1000
-    const node = new EthereumNode()
-    const kc = new KafkaConnector()
-    let allowRun = true
-    const inner = ()=>{
-        if(allowRun) {
-            debug("start")
-            allowRun = false
-            check(node, kc)
-                .then(() => {
-                    allowRun = true
-                    debug(`-------------finish-------------`)
-                })
-                .catch((ex) => {
-                    allowRun = true
-                    debug(`Error: ${ex}`)
-                })
-        }
-    }
-    inner();
-    setInterval(inner, intervalTime)
-}
-
-const check = async(node, kc) => {
-    /**
-     *  For test purpose you can clear latestblock & transaction
-     *  LatestBlock.collection.drop()
-     *  Transaction.collection.drop()
-     */
-
-    try{
-        const dbAddressList = await Address.find({})
-        let dbLastSyncBlockNumber = await LatestBlock.findOne({})
-        const addressList = {}
-        dbAddressList.map(item=>{
-            if(item.address){
-                addressList[item.address.toLowerCase()] = item
-            }
-        })
-        if(!dbLastSyncBlockNumber){
-            dbLastSyncBlockNumber = new LatestBlock()
-            dbLastSyncBlockNumber.blockNumber = Number(config.ETHEREUM_SYNC_START_BLOCK)
-        }
-        debug(`block #${dbLastSyncBlockNumber.blockNumber}`)
-
-        dbLastSyncBlockNumber.blockNumber = Number(dbLastSyncBlockNumber.blockNumber) + 1
-        const nodeBlock = await node.getBlockByNumber(dbLastSyncBlockNumber.blockNumber)
-        const txLen = nodeBlock.transactions.length
-        debug(`number of tx: ${txLen}`)
-        for(let i = 0; i < txLen; i++){
-            const tx = nodeBlock.transactions[i]
-            let addressItem;
-            let txType;
-            if(tx.to && addressList[tx.to.toLowerCase()]) {
-                addressItem = addressList[tx.to.toLowerCase()]
-                txType = TYPE.INPUT
-            }
-            if(tx.from && addressList[tx.from.toLowerCase()]){
-                addressItem = addressList[tx.from.toLowerCase()]
-                txType = TYPE.OUTPUT
-            }
-
-            if(addressItem) {
-                debug(`address found: ${addressItem.address}`)
-                const txAmount = node.fromWei(tx.value)
-                let dbTx = await Transaction.findOne({txId: tx.hash})
-                const txReceipt = await node.getTxReceiptById(tx.hash)
-
-                const txFee = node.fromWei((txReceipt.gasUsed * tx.gasPrice).toString())
-                if (!dbTx) {
-                    dbTx = new Transaction()
-                    dbTx.txId = tx.hash
-                }
-                dbTx.addressFrom = tx.from
-                dbTx.addressTo = tx.to
-                dbTx.amount = txAmount
-                dbTx.fee = txFee
-                dbTx.blockNumber = dbLastSyncBlockNumber.blockNumber
-                dbTx.type = txType
-                const data = await dbTx.save()
-
-                debug(`tx saved ${data.txId}, address: ${addressItem.address}`)
-                kc.send(
-                    buildMessage(METHOD_NEW_TRANSACTION, data)
-                )
-                const dbTxList = await Transaction.find({$or: [
-                        {addressFrom: {$regex: addressItem.address, $options: 'i'}},
-                        {addressTo: {$regex: addressItem.address, $options: 'i'}}
-                    ]
-                })
-
-                let balance: number = 0
-                dbTxList.map(txItem => {
-                    if (txItem.type == TYPE.INPUT) {
-                        balance += Number(txItem.amount)
-                    }
-                    else {
-                        balance -= Number(txItem.amount)
-                        balance -= Number(txItem.fee)
-                    }
-                })
-                addressItem.balance = balance
-                const dbAddress = await addressItem.save()
-
-                kc.send(
-                    buildMessage(METHOD_NEW_BALANCE, {
-                        address: dbAddress.address,
-                        txId: tx.hash,
-                        amount: txAmount,
-                        totalBalance: dbAddress.balance,
+class BalanceCheck {
+    run(){
+        const intervalTime = Number(process.env.RUN_INTERVAL) * 1000
+        const node = new EthereumNode()
+        const kc = new KafkaConnector()
+        let allowRun = true
+        const inner = ()=>{
+            if(allowRun) {
+                debug("start")
+                allowRun = false
+                this.check(node, kc)
+                    .then(() => {
+                        allowRun = true
+                        debug(`-------------finish-------------`)
                     })
-                )
+                    .catch((ex) => {
+                        allowRun = true
+                        debug(`Error: ${ex}`)
+                    })
             }
         }
-        dbLastSyncBlockNumber.save()
+        inner();
+        setInterval(inner, intervalTime)
     }
-    catch(e){
 
-    }
-    finally{
+    async check(node, kc){
+        /**
+         *  For test purpose you can clear latestblock & transaction
+         *  LatestBlock.collection.drop()
+         *  Transaction.collection.drop()
+         */
 
+        try{
+            const dbAddressList = await Address.find({})
+            let dbLastSyncBlockNumber = await LatestBlock.findOne({})
+            const addressList = {}
+            dbAddressList.map(item=>{
+                if(item.address){
+                    addressList[item.address.toLowerCase()] = item
+                }
+            })
+            if(!dbLastSyncBlockNumber){
+                dbLastSyncBlockNumber = new LatestBlock()
+                dbLastSyncBlockNumber.blockNumber = Number(config.ETHEREUM_SYNC_START_BLOCK)
+            }
+            debug(`block #${dbLastSyncBlockNumber.blockNumber}`)
+
+            dbLastSyncBlockNumber.blockNumber = Number(dbLastSyncBlockNumber.blockNumber) + 1
+            const nodeBlock = await node.getBlockByNumber(dbLastSyncBlockNumber.blockNumber)
+            const txLen = nodeBlock.transactions.length
+            debug(`number of tx: ${txLen}`)
+            for(let i = 0; i < txLen; i++){
+                const tx = nodeBlock.transactions[i]
+                let addressItem;
+                let txType;
+                if(tx.to && addressList[tx.to.toLowerCase()]) {
+                    addressItem = addressList[tx.to.toLowerCase()]
+                    txType = TYPE.INPUT
+                }
+                if(tx.from && addressList[tx.from.toLowerCase()]){
+                    addressItem = addressList[tx.from.toLowerCase()]
+                    txType = TYPE.OUTPUT
+                }
+
+                if(addressItem) {
+                    debug(`address found: ${addressItem.address}`)
+                    const txAmount = node.fromWei(tx.value)
+                    let dbTx = await Transaction.findOne({txId: tx.hash})
+                    const txReceipt = await node.getTxReceiptById(tx.hash)
+
+                    const txFee = node.fromWei((txReceipt.gasUsed * tx.gasPrice).toString())
+                    if (!dbTx) {
+                        dbTx = new Transaction()
+                        dbTx.txId = tx.hash
+                    }
+                    dbTx.addressFrom = tx.from
+                    dbTx.addressTo = tx.to
+                    dbTx.amount = txAmount
+                    dbTx.fee = txFee
+                    dbTx.blockNumber = dbLastSyncBlockNumber.blockNumber
+                    dbTx.type = txType
+                    const data = await dbTx.save()
+
+                    debug(`tx saved ${data.txId}, address: ${addressItem.address}`)
+                    kc.send(
+                        buildMessage(METHOD_NEW_TRANSACTION, data)
+                    )
+                    const dbTxList = await Transaction.find({$or: [
+                            {addressFrom: {$regex: addressItem.address, $options: 'i'}},
+                            {addressTo: {$regex: addressItem.address, $options: 'i'}}
+                        ]
+                    })
+
+                    let balance: number = 0
+                    dbTxList.map(txItem => {
+                        if (txItem.type == TYPE.INPUT) {
+                            balance += Number(txItem.amount)
+                        }
+                        else {
+                            balance -= Number(txItem.amount)
+                            balance -= Number(txItem.fee)
+                        }
+                    })
+                    addressItem.balance = balance
+                    const dbAddress = await addressItem.save()
+
+                    kc.send(
+                        buildMessage(METHOD_NEW_BALANCE, {
+                            address: dbAddress.address,
+                            txId: tx.hash,
+                            amount: txAmount,
+                            totalBalance: dbAddress.balance,
+                        })
+                    )
+                }
+            }
+            dbLastSyncBlockNumber.save()
+        }
+        catch(e){
+
+        }
+        finally{
+
+        }
     }
 }
 
-
-run()
+const bcheck = new BalanceCheck();
+bcheck.run()
