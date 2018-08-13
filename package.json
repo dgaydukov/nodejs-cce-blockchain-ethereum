@@ -1,8 +1,8 @@
 {
-  "name": "BitcoinCryptoConnector",
+  "name": "EthereumNodeProxy",
   "version": "1.0.0",
-  "description": "bitcoin microservise",
-  "main": "app/server.js",
+  "description": "The proxy above ethereum node(geth)",
+  "main": "dist/index.js",
   "scripts": {
     "start": "npm-run-all clean build --parallel watch pm2",
     "clean": "mkdir -p dist && rm -rf dist/*",
