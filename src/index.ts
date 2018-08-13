@@ -2,17 +2,13 @@
  * Application entry point
  */
 
-
-//require('look').start()
 require('module-alias/register')
 const {promisify} = require('util');
-
 import express = require('express')
 import {KafkaConnector} from "@kafka/kafkaConnector"
 
 const app = express()
 const port = process.env.PORT
-
 const kc = new KafkaConnector()
 kc.listen()
 
